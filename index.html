@@ -108,7 +108,7 @@
   </div>
 
   <script>
-    const PW_HASH = 'e9405bda1a981fd543da9a28ef83a8e4de7b52c7a21fddd6d1e3451a3e1c74a6';
+    const PW_HASH = '6ed09607ae0f7186a908a39b29e64cea658d96283aa28d37cebf3af395911895';
     async function sha256(str) {
       const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
       return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
