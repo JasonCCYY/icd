@@ -209,21 +209,31 @@ header h1 {
   opacity: 1;
 }
 
-/* Abbr reference panel */
+/* Abbr toggle */
+#abbr-wrap {
+  margin: 0 16px 10px;
+}
+
+#abbr-toggle {
+  background: var(--accent);
+  border: 1.5px solid var(--primary);
+  color: var(--primary-dark);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.2px;
+}
+
 #abbr-panel {
-  margin: 0 16px 12px;
+  margin-top: 8px;
   background: var(--accent);
   border-radius: var(--radius);
-  padding: 12px 14px;
+  padding: 10px 14px;
   font-size: 0.78rem;
   color: var(--primary-dark);
   line-height: 1.8;
-}
-
-#abbr-panel strong {
-  display: block;
-  margin-bottom: 4px;
-  font-size: 0.8rem;
 }
 
 .abbr-grid {

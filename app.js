@@ -17,6 +17,7 @@ const ABBR = [
   { pattern: /\bC-/gi,      expand: 'cervical ' },
   { pattern: /\bl\b/gi,     expand: 'lumbar' },
   { pattern: /\bc\b/gi,     expand: 'cervical' },
+  { pattern: /\brc\b/gi,    expand: 'rotator cuff' },
 ];
 
 const ABBR_DISPLAY = [
@@ -25,6 +26,7 @@ const ABBR_DISPLAY = [
   ['fr', 'fracture'],          ['spr', 'sprain'],
   ['spo', 'spondylosis'],      ['ten', 'tendinitis'],
   ['L- / l', 'lumbar'],        ['C- / c', 'cervical'],
+  ['rc', 'rotator cuff'],      ['', ''],
 ];
 
 // ─── DOM refs ────────────────────────────────────────────────────────────────
@@ -38,13 +40,29 @@ const resultsArea  = document.getElementById('results-area');
 
 // ─── Abbreviation reference panel ────────────────────────────────────────────
 function renderAbbrPanel() {
+  const wrap = document.createElement('div');
+  wrap.id = 'abbr-wrap';
+
+  const btn = document.createElement('button');
+  btn.id = 'abbr-toggle';
+  btn.textContent = '縮寫對照 ▾';
+
   const panel = document.createElement('div');
   panel.id = 'abbr-panel';
-  const grid = ABBR_DISPLAY.map(([k, v]) =>
+  panel.hidden = true;
+  const grid = ABBR_DISPLAY.filter(([k]) => k).map(([k, v]) =>
     `<span><span class="abbr-tag">${k}</span> → ${v}</span>`
   ).join('');
-  panel.innerHTML = `<strong>縮寫對照</strong><div class="abbr-grid">${grid}</div>`;
-  resultsArea.parentNode.insertBefore(panel, resultsArea);
+  panel.innerHTML = `<div class="abbr-grid">${grid}</div>`;
+
+  btn.addEventListener('click', () => {
+    panel.hidden = !panel.hidden;
+    btn.textContent = panel.hidden ? '縮寫對照 ▾' : '縮寫對照 ▴';
+  });
+
+  wrap.appendChild(btn);
+  wrap.appendChild(panel);
+  resultsArea.parentNode.insertBefore(wrap, resultsArea);
 }
 renderAbbrPanel();
 
