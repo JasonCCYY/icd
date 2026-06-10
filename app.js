@@ -3,8 +3,8 @@
 // ─── Abbreviation map ────────────────────────────────────────────────────────
 const ABBR = [
   // order matters: longer / more-specific patterns first
-  { pattern: /\ba\/w\b/gi,  expand: 'abrasion wound' },
-  { pattern: /\baw\b/gi,    expand: 'abrasion wound' },
+  { pattern: /\ba\/w\b/gi,  expand: 'abrasion' },
+  { pattern: /\baw\b/gi,    expand: 'abrasion' },
   { pattern: /\bspo\b/gi,   expand: 'spondylosis' },
   { pattern: /\bspr\b/gi,   expand: 'sprain' },
   { pattern: /\bten\b/gi,   expand: 'tendinitis' },
@@ -19,7 +19,7 @@ const ABBR = [
 
 const ABBR_DISPLAY = [
   ['rt / Rt', 'right'],        ['lt / Lt', 'left'],
-  ['a/w / aw', 'abrasion wound'], ['con', 'contusion'],
+  ['a/w / aw', 'abrasion'],    ['con', 'contusion'],
   ['fr', 'fracture'],          ['spr', 'sprain'],
   ['spo', 'spondylosis'],      ['ten', 'tendinitis'],
   ['L-', 'lumbar'],            ['C-', 'cervical'],
@@ -76,7 +76,13 @@ async function searchICD(query) {
   const data = await resp.json();
   // data = [totalCount, codes[], extraInfo, [[code, name], ...]]
   const items = data[3] || [];
-  return items.map(([code, name]) => ({ code, name }));
+  const results = items.map(([code, name]) => ({ code, name }));
+  results.sort((a, b) => {
+    const ai = /initial/i.test(a.name) ? 0 : 1;
+    const bi = /initial/i.test(b.name) ? 0 : 1;
+    return ai - bi;
+  });
+  return results;
 }
 
 // ─── Render results ───────────────────────────────────────────────────────────
