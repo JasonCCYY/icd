@@ -40,11 +40,9 @@ const resultsArea = document.getElementById('results-area');
 function renderAbbrPanel() {
   const wrap = document.createElement('div');
   wrap.id = 'abbr-wrap';
-
   const btn = document.createElement('button');
   btn.id = 'abbr-toggle';
   btn.textContent = '縮寫對照 ▾';
-
   const panel = document.createElement('div');
   panel.id = 'abbr-panel';
   panel.hidden = true;
@@ -52,12 +50,10 @@ function renderAbbrPanel() {
     `<span><span class="abbr-tag">${k}</span> → ${v}</span>`
   ).join('');
   panel.innerHTML = `<div class="abbr-grid">${grid}</div>`;
-
   btn.addEventListener('click', () => {
     panel.hidden = !panel.hidden;
     btn.textContent = panel.hidden ? '縮寫對照 ▾' : '縮寫對照 ▴';
   });
-
   wrap.appendChild(btn);
   wrap.appendChild(panel);
   resultsArea.parentNode.insertBefore(wrap, resultsArea);
@@ -66,7 +62,6 @@ renderAbbrPanel();
 
 // ─── ICD code auto-format (m4726 → M47.26) ───────────────────────────────────
 function maybeFormatCode(q) {
-  // Match: single letter + exactly 2 digits + 1 or more alphanumeric chars, no dot yet
   const m = q.trim().match(/^([A-Za-z])(\d{2})([A-Za-z0-9]+)$/);
   if (m) return `${m[1].toUpperCase()}${m[2]}.${m[3].toUpperCase()}`;
   return q;
@@ -84,46 +79,101 @@ function expandAbbr(raw) {
   return { expanded: q, applied };
 }
 
-// ─── Chinese name cache (localStorage) ───────────────────────────────────────
-const ZH_KEY = 'icd10-zh-v1';
-let zhCache = {};
-try { zhCache = JSON.parse(localStorage.getItem(ZH_KEY) || '{}'); } catch(e) {}
+// ─── Chinese ICD-10 lookup (IndexedDB) ───────────────────────────────────────
+// Source: 臺灣健保署 2023年中文版 ICD-10-CM (TW Core IG FHIR)
+const ZH_DB_NAME  = 'icd10zh';
+const ZH_DB_VER   = 1;
+const ZH_STORE    = 'codes';
+const ZH_META_KEY = '__meta__';
+const ZH_SRC      = 'https://build.fhir.org/ig/cctwFHIRterm/MOHW_TWCoreIG_Build/CodeSystem-icd-10-cm-2023-tw.json';
 
-function saveZhCache() {
-  try { localStorage.setItem(ZH_KEY, JSON.stringify(zhCache)); } catch(e) {}
+let zhDB = null;
+let zhReady = false;
+let zhStatusEl = null;
+
+function openZhDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(ZH_DB_NAME, ZH_DB_VER);
+    req.onupgradeneeded = e => {
+      e.target.result.createObjectStore(ZH_STORE);
+    };
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e.target.error);
+  });
 }
 
-// Sequential translation queue to avoid flooding API
-const zhQueue = [];
-let zhRunning = false;
-
-function enqueueZh(code, name, callback) {
-  if (zhCache[code]) { callback(zhCache[code]); return; }
-  zhQueue.push({ code, name, callback });
-  if (!zhRunning) runZhQueue();
+function dbGet(key) {
+  return new Promise((resolve) => {
+    const tx = zhDB.transaction(ZH_STORE, 'readonly');
+    const req = tx.objectStore(ZH_STORE).get(key);
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = () => resolve(undefined);
+  });
 }
 
-async function runZhQueue() {
-  zhRunning = true;
-  while (zhQueue.length) {
-    const { code, name, callback } = zhQueue.shift();
-    if (zhCache[code]) { callback(zhCache[code]); continue; }
-    try {
-      const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(name)}&langpair=en|zh-TW`;
-      const r = await fetch(url);
-      const data = await r.json();
-      if (data.responseStatus === 200) {
-        const zh = data.responseData.translatedText;
-        zhCache[code] = zh;
-        saveZhCache();
-        callback(zh);
-      }
-    } catch(e) {}
-    // small delay between requests
-    await new Promise(res => setTimeout(res, 120));
+function dbPutBulk(entries) {
+  return new Promise((resolve, reject) => {
+    const tx = zhDB.transaction(ZH_STORE, 'readwrite');
+    const store = tx.objectStore(ZH_STORE);
+    for (const [k, v] of entries) store.put(v, k);
+    tx.oncomplete = resolve;
+    tx.onerror    = e => reject(e.target.error);
+  });
+}
+
+async function getZhName(code) {
+  if (!zhReady || !zhDB) return null;
+  return dbGet(code);
+}
+
+async function initZhDB() {
+  try {
+    zhDB = await openZhDB();
+    const meta = await dbGet(ZH_META_KEY);
+    if (meta && meta.loaded) { zhReady = true; return; }
+
+    // First-time download
+    showZhStatus('正在下載中文病名資料庫（僅需一次）…');
+    const resp = await fetch(ZH_SRC);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+
+    const concepts = data.concept || [];
+    showZhStatus(`處理 ${concepts.length} 筆資料中…`);
+
+    // Parse FHIR CodeSystem concepts
+    // Each concept: { code, display, designation: [{language, value}] }
+    const entries = [];
+    for (const c of concepts) {
+      const zhDes = (c.designation || []).find(d =>
+        d.language && d.language.toLowerCase().startsWith('zh')
+      );
+      const zhName = zhDes ? zhDes.value : (c.display || '');
+      if (c.code && zhName) entries.push([c.code, zhName]);
+    }
+
+    await dbPutBulk(entries);
+    await dbPutBulk([[ZH_META_KEY, { loaded: true, count: entries.length, date: Date.now() }]]);
+    zhReady = true;
+    showZhStatus(`✓ 中文病名已載入（${entries.length} 筆）`);
+    setTimeout(() => showZhStatus(''), 3000);
+  } catch(e) {
+    showZhStatus('中文病名載入失敗（網路問題）');
+    setTimeout(() => showZhStatus(''), 4000);
   }
-  zhRunning = false;
 }
+
+function showZhStatus(msg) {
+  if (!zhStatusEl) {
+    zhStatusEl = document.createElement('div');
+    zhStatusEl.id = 'zh-status';
+    resultsArea.parentNode.insertBefore(zhStatusEl, resultsArea);
+  }
+  zhStatusEl.textContent = msg;
+  zhStatusEl.hidden = !msg;
+}
+
+initZhDB();
 
 // ─── API search (NIH NLM) ────────────────────────────────────────────────────
 const API_BASE = 'https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search';
@@ -132,7 +182,6 @@ let abortController = null;
 async function searchICD(query) {
   if (abortController) abortController.abort();
   abortController = new AbortController();
-
   const url = `${API_BASE}?terms=${encodeURIComponent(query)}&sf=code,name&df=code,name&maxList=30`;
   const resp = await fetch(url, { signal: abortController.signal });
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -157,20 +206,21 @@ function renderResults(items) {
   for (const { code, name } of items) {
     const li = document.createElement('li');
     li.className = 'result-item';
+    const zhEl = document.createElement('span');
+    zhEl.className = 'result-zh';
     li.innerHTML = `
       <div class="result-inner">
         <span class="code-badge">${escHtml(code)}</span>
         <span class="result-text-wrap">
           <span class="result-en">${escHtml(name)}</span>
-          <span class="result-zh"></span>
         </span>
       </div>`;
+    li.querySelector('.result-text-wrap').appendChild(zhEl);
     li.addEventListener('click', () => copyCode(li, code));
     resultsList.appendChild(li);
 
-    // async fetch Chinese name
-    const zhEl = li.querySelector('.result-zh');
-    enqueueZh(code, name, zh => { zhEl.textContent = zh; });
+    // Fill Chinese name async
+    getZhName(code).then(zh => { if (zh) zhEl.textContent = zh; });
   }
 }
 
@@ -184,18 +234,17 @@ let toastTimer = null;
 
 function copyCode(li, code) {
   const clean = code.replace(/\./g, '');
-  navigator.clipboard.writeText(clean).then(() => {
-    flashCopy(li, clean);
-  }).catch(() => {
-    const ta = document.createElement('textarea');
-    ta.value = clean;
-    ta.style.cssText = 'position:fixed;opacity:0';
-    document.body.appendChild(ta);
-    ta.focus(); ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    flashCopy(li, clean);
-  });
+  navigator.clipboard.writeText(clean).then(() => flashCopy(li, clean))
+    .catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = clean;
+      ta.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      flashCopy(li, clean);
+    });
 }
 
 function flashCopy(li, clean) {
@@ -225,7 +274,6 @@ function handleInput() {
     return;
   }
 
-  // Try code format first (e.g. m4726 → M47.26), else expand abbreviations
   const formatted = maybeFormatCode(raw.trim());
   let query, hint;
   if (formatted !== raw.trim()) {
@@ -238,7 +286,6 @@ function handleInput() {
   }
 
   abbrHint.textContent = hint;
-
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => doSearch(query), 300);
 }
