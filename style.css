@@ -259,17 +259,6 @@ header h1 {
   font-weight: 600;
 }
 
-/* Chinese DB status bar */
-#zh-status {
-  margin: 0 16px 8px;
-  font-size: 0.75rem;
-  color: var(--primary-dark);
-  background: var(--accent);
-  border-radius: 8px;
-  padding: 6px 12px;
-  text-align: center;
-}
-
 /* Loading spinner */
 .spinner {
   display: inline-block;

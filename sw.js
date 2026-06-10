@@ -1,5 +1,5 @@
-const CACHE = 'icd10-v5';
-const ASSETS = ['/', '/index.html', '/style.css', '/app.js', '/manifest.json'];
+const CACHE = 'icd10-v6';
+const ASSETS = ['/', '/index.html', '/style.css', '/app.js', '/manifest.json', '/zh.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(

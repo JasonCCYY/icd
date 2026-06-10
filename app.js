@@ -60,6 +60,20 @@ function renderAbbrPanel() {
 }
 renderAbbrPanel();
 
+// ─── Chinese lookup (local zh.json, 健保署 2023 官方中文版) ───────────────────
+let zhMap = null;
+
+fetch('zh.json')
+  .then(r => r.json())
+  .then(data => { zhMap = data; })
+  .catch(() => {});
+
+function getZhName(code) {
+  if (!zhMap) return null;
+  // NLM returns codes with dot (M47.26); zh.json keys have no dot (M4726)
+  return zhMap[code.replace(/\./g, '')] || null;
+}
+
 // ─── ICD code auto-format (m4726 → M47.26) ───────────────────────────────────
 function maybeFormatCode(q) {
   const m = q.trim().match(/^([A-Za-z])(\d{2})([A-Za-z0-9]+)$/);
@@ -78,102 +92,6 @@ function expandAbbr(raw) {
   q = q.replace(/\s+/g, ' ').trim();
   return { expanded: q, applied };
 }
-
-// ─── Chinese ICD-10 lookup (IndexedDB) ───────────────────────────────────────
-// Source: 臺灣健保署 2023年中文版 ICD-10-CM (TW Core IG FHIR)
-const ZH_DB_NAME  = 'icd10zh';
-const ZH_DB_VER   = 1;
-const ZH_STORE    = 'codes';
-const ZH_META_KEY = '__meta__';
-const ZH_SRC      = 'https://build.fhir.org/ig/cctwFHIRterm/MOHW_TWCoreIG_Build/CodeSystem-icd-10-cm-2023-tw.json';
-
-let zhDB = null;
-let zhReady = false;
-let zhStatusEl = null;
-
-function openZhDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(ZH_DB_NAME, ZH_DB_VER);
-    req.onupgradeneeded = e => {
-      e.target.result.createObjectStore(ZH_STORE);
-    };
-    req.onsuccess = e => resolve(e.target.result);
-    req.onerror   = e => reject(e.target.error);
-  });
-}
-
-function dbGet(key) {
-  return new Promise((resolve) => {
-    const tx = zhDB.transaction(ZH_STORE, 'readonly');
-    const req = tx.objectStore(ZH_STORE).get(key);
-    req.onsuccess = e => resolve(e.target.result);
-    req.onerror   = () => resolve(undefined);
-  });
-}
-
-function dbPutBulk(entries) {
-  return new Promise((resolve, reject) => {
-    const tx = zhDB.transaction(ZH_STORE, 'readwrite');
-    const store = tx.objectStore(ZH_STORE);
-    for (const [k, v] of entries) store.put(v, k);
-    tx.oncomplete = resolve;
-    tx.onerror    = e => reject(e.target.error);
-  });
-}
-
-async function getZhName(code) {
-  if (!zhReady || !zhDB) return null;
-  return dbGet(code);
-}
-
-async function initZhDB() {
-  try {
-    zhDB = await openZhDB();
-    const meta = await dbGet(ZH_META_KEY);
-    if (meta && meta.loaded) { zhReady = true; return; }
-
-    // First-time download
-    showZhStatus('正在下載中文病名資料庫（僅需一次）…');
-    const resp = await fetch(ZH_SRC);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const data = await resp.json();
-
-    const concepts = data.concept || [];
-    showZhStatus(`處理 ${concepts.length} 筆資料中…`);
-
-    // Parse FHIR CodeSystem concepts
-    // Each concept: { code, display, designation: [{language, value}] }
-    const entries = [];
-    for (const c of concepts) {
-      const zhDes = (c.designation || []).find(d =>
-        d.language && d.language.toLowerCase().startsWith('zh')
-      );
-      const zhName = zhDes ? zhDes.value : (c.display || '');
-      if (c.code && zhName) entries.push([c.code, zhName]);
-    }
-
-    await dbPutBulk(entries);
-    await dbPutBulk([[ZH_META_KEY, { loaded: true, count: entries.length, date: Date.now() }]]);
-    zhReady = true;
-    showZhStatus(`✓ 中文病名已載入（${entries.length} 筆）`);
-    setTimeout(() => showZhStatus(''), 3000);
-  } catch(e) {
-    showZhStatus('中文病名載入失敗（網路問題）');
-    setTimeout(() => showZhStatus(''), 4000);
-  }
-}
-
-function showZhStatus(msg) {
-  if (!zhStatusEl) {
-    zhStatusEl = document.createElement('div');
-    zhStatusEl.id = 'zh-status';
-    resultsArea.parentNode.insertBefore(zhStatusEl, resultsArea);
-  }
-  zhStatusEl.textContent = msg;
-  zhStatusEl.hidden = !msg;
-}
-
-initZhDB();
 
 // ─── API search (NIH NLM) ────────────────────────────────────────────────────
 const API_BASE = 'https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search';
@@ -204,23 +122,19 @@ function renderResults(items) {
     return;
   }
   for (const { code, name } of items) {
+    const zh = getZhName(code);
     const li = document.createElement('li');
     li.className = 'result-item';
-    const zhEl = document.createElement('span');
-    zhEl.className = 'result-zh';
     li.innerHTML = `
       <div class="result-inner">
         <span class="code-badge">${escHtml(code)}</span>
         <span class="result-text-wrap">
           <span class="result-en">${escHtml(name)}</span>
+          ${zh ? `<span class="result-zh">${escHtml(zh)}</span>` : ''}
         </span>
       </div>`;
-    li.querySelector('.result-text-wrap').appendChild(zhEl);
     li.addEventListener('click', () => copyCode(li, code));
     resultsList.appendChild(li);
-
-    // Fill Chinese name async
-    getZhName(code).then(zh => { if (zh) zhEl.textContent = zh; });
   }
 }
 
