@@ -15,6 +15,8 @@ const ABBR = [
   // prefix-style: L- / C- (with or without dash)
   { pattern: /\bL-/gi,      expand: 'lumbar ' },
   { pattern: /\bC-/gi,      expand: 'cervical ' },
+  { pattern: /\bl\b/gi,     expand: 'lumbar' },
+  { pattern: /\bc\b/gi,     expand: 'cervical' },
 ];
 
 const ABBR_DISPLAY = [
@@ -22,7 +24,7 @@ const ABBR_DISPLAY = [
   ['a/w / aw', 'abrasion'],    ['con', 'contusion'],
   ['fr', 'fracture'],          ['spr', 'sprain'],
   ['spo', 'spondylosis'],      ['ten', 'tendinitis'],
-  ['L-', 'lumbar'],            ['C-', 'cervical'],
+  ['L- / l', 'lumbar'],        ['C- / c', 'cervical'],
 ];
 
 // ─── DOM refs ────────────────────────────────────────────────────────────────
