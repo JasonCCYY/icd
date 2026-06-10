@@ -17,7 +17,7 @@
   --copy-bg: #e6f4ea;
   --radius: 12px;
   --shadow: 0 2px 8px rgba(0,0,0,0.1);
-  --tab-h: 62px;
+  --tab-h: 52px;
   --header-h: 52px;
 }
 
@@ -201,15 +201,10 @@ body {
   font-family: inherit;
 }
 
-.tab svg {
-  width: 22px;
-  height: 22px;
-  fill: currentColor;
-  flex-shrink: 0;
-}
+.tab svg { display: none; }
 
 .tab span {
-  font-size: 0.7rem;
+  font-size: 0.85rem;
   font-weight: 500;
 }
 
