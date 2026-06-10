@@ -1,9 +1,13 @@
-const CACHE = 'icd10-v2';
+const CACHE = 'icd10-v3';
 const ASSETS = ['/', '/index.html', '/style.css', '/app.js', '/manifest.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE).then(c =>
+      Promise.all(ASSETS.map(url =>
+        fetch(url, { cache: 'no-store' }).then(r => c.put(url, r))
+      ))
+    ).then(() => self.skipWaiting())
   );
 });
 
