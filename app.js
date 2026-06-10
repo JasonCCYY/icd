@@ -217,6 +217,17 @@ async function doSearch(query) {
   }
 }
 
+// ─── Tab navigation ───────────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`page-${btn.dataset.page}`).classList.add('active');
+    document.getElementById('header-title').textContent = btn.dataset.title;
+  });
+});
+
 searchInput.addEventListener('input', handleInput);
 
 clearBtn.addEventListener('click', () => {
