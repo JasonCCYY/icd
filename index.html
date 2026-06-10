@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1a73e8" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="ICD-10" />
+  <title>ICD-10 Search</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>ICD-10 Search</h1>
+    </header>
+
+    <div id="search-area">
+      <div id="input-wrap">
+        <input
+          id="search-input"
+          type="text"
+          placeholder="搜索 ICD-10（支援縮寫：rt lt fr spr…）"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+        />
+        <button id="clear-btn" aria-label="清除">✕</button>
+      </div>
+      <div id="abbr-hint"></div>
+    </div>
+
+    <div id="results-area">
+      <div id="status"></div>
+      <ul id="results-list"></ul>
+    </div>
+
+    <div id="toast">已複製！</div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
