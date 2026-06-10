@@ -13,7 +13,26 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="app">
+
+  <!-- Password gate -->
+  <div id="lock-screen">
+    <div id="lock-box">
+      <div id="lock-icon">🔒</div>
+      <h2>ICD-10 Search</h2>
+      <input
+        id="pw-input"
+        type="password"
+        placeholder="請輸入密碼"
+        autocomplete="current-password"
+        inputmode="numeric"
+      />
+      <button id="pw-btn">確認</button>
+      <div id="pw-error"></div>
+    </div>
+  </div>
+
+  <!-- Main app (hidden until unlocked) -->
+  <div id="app" hidden>
     <header>
       <h1>ICD-10 Search</h1>
     </header>
@@ -41,6 +60,45 @@
 
     <div id="toast">已複製！</div>
   </div>
+
+  <script>
+    // SHA-256 hash of "0826123456"
+    const PW_HASH = 'e9405bda1a981fd543da9a28ef83a8e4de7b52c7a21fddd6d1e3451a3e1c74a6';
+
+    async function sha256(str) {
+      const buf = await crypto.subtle.digest('SHA-256',
+        new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buf))
+        .map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function tryUnlock() {
+      const val = document.getElementById('pw-input').value;
+      const hash = await sha256(val);
+      if (hash === PW_HASH) {
+        sessionStorage.setItem('icd_auth', '1');
+        document.getElementById('lock-screen').remove();
+        document.getElementById('app').hidden = false;
+        document.getElementById('search-input').focus();
+      } else {
+        const err = document.getElementById('pw-error');
+        err.textContent = '密碼錯誤';
+        document.getElementById('pw-input').value = '';
+        setTimeout(() => { err.textContent = ''; }, 2000);
+      }
+    }
+
+    if (sessionStorage.getItem('icd_auth') === '1') {
+      document.getElementById('lock-screen').remove();
+      document.getElementById('app').hidden = false;
+    } else {
+      document.getElementById('pw-btn').addEventListener('click', tryUnlock);
+      document.getElementById('pw-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter') tryUnlock();
+      });
+      setTimeout(() => document.getElementById('pw-input').focus(), 100);
+    }
+  </script>
 
   <script src="app.js"></script>
 </body>
