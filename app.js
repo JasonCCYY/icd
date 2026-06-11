@@ -505,6 +505,16 @@ function renderSoapPicker(typeData) {
           // Append dx code at end, no label
           const cur = soapTextarea.value.trimEnd();
           soapTextarea.value = cur ? `${cur}\n${item}` : item;
+        } else if (line === 'S' && /^(Lt|Rt)$/i.test(item)) {
+          // For Lt/Rt chips, insert before "pain after" if present, else prepend
+          const lines = soapLines();
+          const s = lines.S;
+          if (s.includes('pain after')) {
+            lines.S = s.replace(/^(.*?)(pain after)/, (_, pre, pa) => `${pre}${item} ${pa}`);
+          } else {
+            lines.S = s ? `${item} ${s}` : item;
+          }
+          soapTextarea.value = buildSoapText(lines);
         } else {
           appendToLine(line, item);
         }
