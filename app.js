@@ -394,11 +394,18 @@ opsShowAllBtn.addEventListener('click', async () => {
 const SOAP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxCaJs3M9JxP6gm2jsSGD2mQn03y1Vdf2zmb1JSvCfJKxLm21HiUNnq--JaEevTeQno4Q/exec';
 const SOAP_TOKEN      = 'cycicd-ops-X7m3K9pQ';
 
-function addDblClickCopy(chip, text) {
+function addChipEvents(chip, onSingleClick, copyText) {
+  let timer = null;
+  chip.addEventListener('click', () => {
+    if (timer) return;
+    timer = setTimeout(() => { timer = null; onSingleClick(); }, 220);
+  });
   chip.addEventListener('dblclick', e => {
     e.stopPropagation();
-    navigator.clipboard.writeText(text).catch(() => {});
-    showToast(`已複製：${text.length > 12 ? text.slice(0,12) + '…' : text}`);
+    if (timer) { clearTimeout(timer); timer = null; }
+    navigator.clipboard.writeText(copyText).catch(() => {});
+    const label = copyText.length > 14 ? copyText.slice(0, 14) + '…' : copyText;
+    showToast(`已複製：${label}`);
   });
 }
 
@@ -561,13 +568,11 @@ function renderSoapPicker(typeData) {
       const chip = document.createElement('button');
       chip.className = 'soap-chip';
       chip.textContent = item;
-      chip.addEventListener('click', () => {
+      addChipEvents(chip, () => {
         if (line === '__dx__') {
-          // Append dx code at end, no label
           const cur = soapTextarea.value.trimEnd();
           soapTextarea.value = cur ? `${cur}\n${item}` : item;
         } else if (line === 'S' && /^(Lt|Rt)$/i.test(item)) {
-          // For Lt/Rt chips, insert before "pain after" if present, else prepend
           const lines = soapLines();
           const s = lines.S;
           if (s.includes('pain after')) {
@@ -577,15 +582,13 @@ function renderSoapPicker(typeData) {
           }
           soapTextarea.value = buildSoapText(lines);
         } else if (line === 'XR') {
-          // Strip leading "A: " prefix if present (label already in textarea)
           appendToLine('XR', item.startsWith('A: ') ? item.slice(3) : item);
         } else {
           appendToLine(line, item);
         }
         chip.classList.add('soap-chip-used');
         setTimeout(() => chip.classList.remove('soap-chip-used'), 600);
-      });
-      addDblClickCopy(chip, item);
+      }, item);
       container.appendChild(chip);
     });
   });
@@ -698,22 +701,16 @@ function renderCertPicker(typeData) {
     const chip = document.createElement('button');
     chip.className = 'soap-chip';
     chip.textContent = num;
-    chip.addEventListener('click', () => {
+    addChipEvents(chip, () => {
       const lines = certTextarea.value ? certTextarea.value.split('\n') : [''];
       const procIdx = lines.findIndex(l => l.includes('接受治療'));
       const disLine = procIdx === -1 ? lines[0] : (procIdx > 0 ? lines[0] : '');
       const base = certStripSuffix(disLine || '');
-      const updated = base ? base + ' ' + num : num;
-      if (procIdx <= 0) {
-        lines[0] = updated + '(以下空白)';
-      } else {
-        lines[0] = updated + '(以下空白)';
-      }
+      lines[0] = (base ? base + ' ' + num : num) + '(以下空白)';
       certTextarea.value = lines.join('\n');
       chip.classList.add('soap-chip-used');
       setTimeout(() => chip.classList.remove('soap-chip-used'), 600);
-    });
-    addDblClickCopy(chip, num);
+    }, num);
     numChips.appendChild(chip);
   });
 
@@ -726,14 +723,12 @@ function renderCertPicker(typeData) {
     const chip = document.createElement('button');
     chip.className = 'soap-chip';
     chip.textContent = item;
-    chip.addEventListener('click', () => {
+    addChipEvents(chip, () => {
       const lines = certTextarea.value ? certTextarea.value.split('\n') : [''];
       const procIdx = lines.findIndex(l => l.includes('接受治療'));
-      // Work on the disease (first) line only — no newlines
       let dis = certStripSuffix(procIdx === -1 ? lines[0] : (procIdx > 0 ? lines[0] : ''));
       const isInjury = /[傷折]/.test(item);
       if (isInjury) {
-        // Always at end; replace existing injury suffix
         dis = dis.replace(/(骨折|[扭擦挫]*傷)$/, '') + item;
       } else {
         const m = dis.match(/^(.*?)(骨折|[扭擦挫]*傷)$/);
@@ -743,8 +738,7 @@ function renderCertPicker(typeData) {
       certTextarea.value = lines.join('\n');
       chip.classList.add('soap-chip-used');
       setTimeout(() => chip.classList.remove('soap-chip-used'), 600);
-    });
-    addDblClickCopy(chip, item);
+    }, item);
     certDisChips.appendChild(chip);
   });
 
@@ -752,12 +746,11 @@ function renderCertPicker(typeData) {
     const chip = document.createElement('button');
     chip.className = 'soap-chip';
     chip.textContent = item;
-    chip.addEventListener('click', () => {
+    addChipEvents(chip, () => {
       certInsertProcess(item);
       chip.classList.add('soap-chip-used');
       setTimeout(() => chip.classList.remove('soap-chip-used'), 600);
-    });
-    addDblClickCopy(chip, item);
+    }, item);
     certProcChips.appendChild(chip);
   });
 }
