@@ -394,6 +394,14 @@ opsShowAllBtn.addEventListener('click', async () => {
 const SOAP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxCaJs3M9JxP6gm2jsSGD2mQn03y1Vdf2zmb1JSvCfJKxLm21HiUNnq--JaEevTeQno4Q/exec';
 const SOAP_TOKEN      = 'cycicd-ops-X7m3K9pQ';
 
+function addDblClickCopy(chip, text) {
+  chip.addEventListener('dblclick', e => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(text).catch(() => {});
+    showToast(`已複製：${text.length > 12 ? text.slice(0,12) + '…' : text}`);
+  });
+}
+
 const soapTabBtns   = document.querySelectorAll('.soap-tab-btn');
 const soapTypeBtns  = document.getElementById('soap-type-btns');
 const soapPicker    = document.getElementById('soap-picker');
@@ -577,6 +585,7 @@ function renderSoapPicker(typeData) {
         chip.classList.add('soap-chip-used');
         setTimeout(() => chip.classList.remove('soap-chip-used'), 600);
       });
+      addDblClickCopy(chip, item);
       container.appendChild(chip);
     });
   });
@@ -704,6 +713,7 @@ function renderCertPicker(typeData) {
       chip.classList.add('soap-chip-used');
       setTimeout(() => chip.classList.remove('soap-chip-used'), 600);
     });
+    addDblClickCopy(chip, num);
     numChips.appendChild(chip);
   });
 
@@ -734,6 +744,7 @@ function renderCertPicker(typeData) {
       chip.classList.add('soap-chip-used');
       setTimeout(() => chip.classList.remove('soap-chip-used'), 600);
     });
+    addDblClickCopy(chip, item);
     certDisChips.appendChild(chip);
   });
 
@@ -746,6 +757,7 @@ function renderCertPicker(typeData) {
       chip.classList.add('soap-chip-used');
       setTimeout(() => chip.classList.remove('soap-chip-used'), 600);
     });
+    addDblClickCopy(chip, item);
     certProcChips.appendChild(chip);
   });
 }
