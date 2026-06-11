@@ -400,7 +400,6 @@ const soapPicker    = document.getElementById('soap-picker');
 const soapDateBtn   = document.getElementById('soap-date-btn');
 const soapTextarea  = document.getElementById('soap-textarea');
 const soapCopyBtn   = document.getElementById('soap-copy-btn');
-const soapClearBtn  = document.getElementById('soap-clear-btn');
 const soapRestoreBtn= document.getElementById('soap-restore-btn');
 
 let soapCache   = {};        // { sheetName: groupedData }
@@ -530,10 +529,7 @@ soapCopyBtn.addEventListener('click', () => {
   const text = soapTextarea.value;
   navigator.clipboard.writeText(text).catch(() => {});
   showToast('已複製 SOAP');
-});
-
-soapClearBtn.addEventListener('click', () => {
-  soapLastVal = soapTextarea.value;
+  soapLastVal = text;
   soapTextarea.value = 'S: \nPE: \nXR: \nP: ';
   soapRestoreBtn.disabled = false;
 });

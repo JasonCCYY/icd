@@ -557,7 +557,7 @@ body {
   font-family: inherit;
 }
 #soap-copy-btn:active { background: var(--primary-dark); }
-#soap-clear-btn, #soap-restore-btn {
+#soap-restore-btn {
   flex: 1;
   padding: 11px;
   background: var(--card);
@@ -570,7 +570,6 @@ body {
   color: var(--text);
 }
 #soap-restore-btn:disabled { opacity: 0.4; cursor: default; }
-#soap-clear-btn:active { background: #fce8e6; border-color: #d93025; }
 
 /* ─── 手術碼 page ─────────────────────────────────────────────────────────── */
 #ops-search-area {
