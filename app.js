@@ -654,10 +654,13 @@ function renderCertPicker(typeData) {
     chip.className = 'soap-chip';
     chip.textContent = item;
     chip.addEventListener('click', () => {
-      // Replace / set first line with disease name
+      // Append to disease line (first line), or start one if not present
       const lines = certTextarea.value.split('\n');
-      // Check if first line looks like a previous disease (non-process)
-      if (lines.length > 0 && !lines[0].includes('接受治療') && !lines[0].includes('，')) {
+      const hasProcess = lines.some(l => l.includes('接受治療'));
+      const disLineIdx = hasProcess ? -1 : 0;
+      if (!hasProcess && lines.length > 0 && lines[0] !== '') {
+        lines[0] = lines[0] + item;
+      } else if (!hasProcess && lines.length > 0) {
         lines[0] = item;
       } else {
         lines.unshift(item);
