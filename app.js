@@ -420,7 +420,11 @@ let soapXrLabel = 'XR';
 function soapLines() {
   const text = soapTextarea.value;
   const parse = {};
-  for (const key of ['S','PE','P']) {
+  // First line: date + S content (no "S:" label)
+  const firstLine = text.split('\n')[0] || '';
+  const dateM = firstLine.match(/^\d{7}\s*(.*)/);
+  parse.S = dateM ? dateM[1].trim() : firstLine.trim();
+  for (const key of ['PE','P']) {
     const m = text.match(new RegExp(`^${key}:(.*)$`, 'm'));
     parse[key] = m ? m[1].trim() : '';
   }
@@ -430,14 +434,18 @@ function soapLines() {
 }
 
 function buildSoapText(lines) {
-  return `S: ${lines.S||''}\nPE: ${lines.PE||''}\n${soapXrLabel}: ${lines.XR||''}\nP: ${lines.P||''}`;
+  const sLine = lines.S ? `${todayStr()} ${lines.S}` : `${todayStr()} `;
+  return `${sLine}\nPE: ${lines.PE||''}\n${soapXrLabel}: ${lines.XR||''}\nP: ${lines.P||''}`;
 }
 
 function filterSoapText(text) {
   return text.split('\n')
     .filter(line => {
-      const m = line.match(/^[A-Z]+:\s*(.*)$/);
-      return !m || m[1].trim() !== '';
+      const labelM = line.match(/^[A-Z]+:\s*(.*)$/);
+      if (labelM) return labelM[1].trim() !== '';
+      const dateM = line.match(/^\d{7}\s*(.*)$/);
+      if (dateM) return dateM[1].trim() !== '';
+      return line.trim() !== '';
     })
     .join('\n');
 }
@@ -500,8 +508,8 @@ async function renderSoapTypes(sheet) {
         soapLastVal = text;
         soapRestoreBtn.disabled = false;
       } else {
-        const defaults = { 'Trauma': `S: pain after\nPE: \n${soapXrLabel}: \nP: ` };
-        soapTextarea.value = defaults[type] || `S: \nPE: \n${soapXrLabel}: \nP: `;
+        const defaults = { 'Trauma': `${todayStr()} pain after\nPE: \n${soapXrLabel}: \nP: ` };
+        soapTextarea.value = defaults[type] || `${todayStr()} \nPE: \n${soapXrLabel}: \nP: `;
       }
     });
     soapTypeBtns.appendChild(btn);
@@ -573,7 +581,7 @@ soapCopyBtn.addEventListener('click', () => {
   navigator.clipboard.writeText(filterSoapText(text)).catch(() => {});
   showToast('已複製 SOAP');
   soapLastVal = text;
-  soapTextarea.value = `S: \nPE: \n${soapXrLabel}: \nP: `;
+  soapTextarea.value = `${todayStr()} \nPE: \n${soapXrLabel}: \nP: `;
   soapRestoreBtn.disabled = false;
 });
 
