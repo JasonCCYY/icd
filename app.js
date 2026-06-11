@@ -415,18 +415,22 @@ function todayStr() {
   return `${roc}${mm}${dd}`;
 }
 
+let soapXrLabel = 'XR';
+
 function soapLines() {
   const text = soapTextarea.value;
   const parse = {};
-  for (const key of ['S','PE','XR','P']) {
+  for (const key of ['S','PE','P']) {
     const m = text.match(new RegExp(`^${key}:(.*)$`, 'm'));
     parse[key] = m ? m[1].trim() : '';
   }
+  const xrMatch = text.match(new RegExp(`^${soapXrLabel}:(.*)$`, 'm'));
+  parse.XR = xrMatch ? xrMatch[1].trim() : '';
   return parse;
 }
 
 function buildSoapText(lines) {
-  return `S: ${lines.S||''}\nPE: ${lines.PE||''}\nXR: ${lines.XR||''}\nP: ${lines.P||''}`;
+  return `S: ${lines.S||''}\nPE: ${lines.PE||''}\n${soapXrLabel}: ${lines.XR||''}\nP: ${lines.P||''}`;
 }
 
 function appendToLine(key, value) {
@@ -472,9 +476,24 @@ async function renderSoapTypes(sheet) {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.soap-type-chip').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      renderSoapPicker(data[type]);
-      const defaults = { 'Trauma': 'S: pain after\nPE: \nXR: \nP: ' };
-      soapTextarea.value = defaults[type] || 'S: \nPE: \nXR: \nP: ';
+      const typeData = data[type];
+      soapXrLabel = (typeData.XR || []).some(v => v.startsWith('A:')) ? 'A' : 'XR';
+      renderSoapPicker(typeData);
+      const isSingle = ['S','PE','XR','P','dx'].every(k => (typeData[k]||[]).length <= 1);
+      if (isSingle) {
+        const xrVal = (typeData.XR?.[0] || '').replace(/^A:\s*/, '');
+        const lines = { S: typeData.S?.[0]||'', PE: typeData.PE?.[0]||'', XR: xrVal, P: typeData.P?.[0]||'' };
+        let text = buildSoapText(lines);
+        if (typeData.dx?.[0]) text += `\n${typeData.dx[0]}`;
+        soapTextarea.value = text;
+        navigator.clipboard.writeText(text).catch(() => {});
+        showToast('已複製！');
+        soapLastVal = text;
+        soapRestoreBtn.disabled = false;
+      } else {
+        const defaults = { 'Trauma': `S: pain after\nPE: \n${soapXrLabel}: \nP: ` };
+        soapTextarea.value = defaults[type] || `S: \nPE: \n${soapXrLabel}: \nP: `;
+      }
     });
     soapTypeBtns.appendChild(btn);
   });
@@ -515,6 +534,9 @@ function renderSoapPicker(typeData) {
             lines.S = s ? `${item} ${s}` : item;
           }
           soapTextarea.value = buildSoapText(lines);
+        } else if (line === 'XR') {
+          // Strip leading "A: " prefix if present (label already in textarea)
+          appendToLine('XR', item.startsWith('A: ') ? item.slice(3) : item);
         } else {
           appendToLine(line, item);
         }
@@ -542,7 +564,7 @@ soapCopyBtn.addEventListener('click', () => {
   navigator.clipboard.writeText(text).catch(() => {});
   showToast('已複製 SOAP');
   soapLastVal = text;
-  soapTextarea.value = 'S: \nPE: \nXR: \nP: ';
+  soapTextarea.value = `S: \nPE: \n${soapXrLabel}: \nP: `;
   soapRestoreBtn.disabled = false;
 });
 
