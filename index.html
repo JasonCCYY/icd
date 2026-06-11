@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="醫療工具" />
-  <title>醫療工具</title>
+  <title>下班關掉！</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icon-192.png" />
   <link rel="stylesheet" href="style.css" />
@@ -106,8 +106,8 @@
       <!-- 診斷書 page -->
       <div class="page" id="page-cert">
         <div id="cert-top-tabs">
-          <button class="soap-tab-btn active" data-cert-sheet="診斷書門診">門診</button>
-          <button class="soap-tab-btn" data-cert-sheet="診斷書中正">中正</button>
+          <button class="soap-tab-btn active" data-cert-sheet="診斷書中正">中正</button>
+          <button class="soap-tab-btn" data-cert-sheet="診斷書門診">門診</button>
         </div>
         <div id="cert-type-area">
           <div id="cert-type-label">選擇類型</div>
@@ -190,6 +190,7 @@
         sessionStorage.setItem('icd_auth', '1');
         document.getElementById('lock-screen').remove();
         document.getElementById('app').hidden = false;
+        setTimeout(() => { if (typeof prefetchAll === 'function') prefetchAll(); }, 300);
       } else {
         const err = document.getElementById('pw-error');
         err.textContent = '密碼錯誤';

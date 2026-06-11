@@ -599,7 +599,7 @@ const certTextarea  = document.getElementById('cert-textarea');
 const certCopyBtn   = document.getElementById('cert-copy-btn');
 const certRestoreBtn= document.getElementById('cert-restore-btn');
 
-let certSheet   = '診斷書門診';
+let certSheet   = '診斷書中正';
 let certLastVal = '';
 const certCache = {};
 
@@ -729,6 +729,15 @@ document.querySelectorAll('.tab').forEach(btn => {
     btn.addEventListener('click', () => renderCertTypes(certSheet), { once: false });
   }
 });
+
+// ─── Pre-fetch all sheet data on unlock ──────────────────────────────────────
+function prefetchAll() {
+  loadOpsData();
+  loadSoapData('SOAP中正');
+  loadSoapData('SOAP門診');
+  loadCertData('診斷書中正');
+  loadCertData('診斷書門診');
+}
 
 // ─── Service worker ───────────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
