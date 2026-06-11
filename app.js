@@ -419,7 +419,7 @@ function todayStr() {
 function soapLines() {
   const text = soapTextarea.value;
   const parse = {};
-  for (const key of ['S','PE','XR','P','Dx']) {
+  for (const key of ['S','PE','XR','P']) {
     const m = text.match(new RegExp(`^${key}:(.*)$`, 'm'));
     parse[key] = m ? m[1].trim() : '';
   }
@@ -427,7 +427,7 @@ function soapLines() {
 }
 
 function buildSoapText(lines) {
-  return `S: ${lines.S||''}\nPE: ${lines.PE||''}\nXR: ${lines.XR||''}\nP: ${lines.P||''}\nDx: ${lines.Dx||''}`;
+  return `S: ${lines.S||''}\nPE: ${lines.PE||''}\nXR: ${lines.XR||''}\nP: ${lines.P||''}`;
 }
 
 function appendToLine(key, value) {
@@ -487,7 +487,7 @@ function renderSoapPicker(typeData) {
     { id: 'soap-pe-chips', key: 'PE', line: 'PE' },
     { id: 'soap-xr-chips', key: 'XR', line: 'XR' },
     { id: 'soap-p-chips',  key: 'P',  line: 'P'  },
-    { id: 'soap-dx-chips', key: 'dx', line: 'Dx' },
+    { id: 'soap-dx-chips', key: 'dx', line: '__dx__' },
   ];
   sections.forEach(({ id, key, line }) => {
     const container = document.getElementById(id);
@@ -500,7 +500,13 @@ function renderSoapPicker(typeData) {
       chip.className = 'soap-chip';
       chip.textContent = item;
       chip.addEventListener('click', () => {
-        appendToLine(line, item);
+        if (line === '__dx__') {
+          // Append dx code at end, no label
+          const cur = soapTextarea.value.trimEnd();
+          soapTextarea.value = cur ? `${cur}\n${item}` : item;
+        } else {
+          appendToLine(line, item);
+        }
         chip.classList.add('soap-chip-used');
         setTimeout(() => chip.classList.remove('soap-chip-used'), 600);
       });
@@ -528,7 +534,7 @@ soapCopyBtn.addEventListener('click', () => {
 
 soapClearBtn.addEventListener('click', () => {
   soapLastVal = soapTextarea.value;
-  soapTextarea.value = 'S: \nPE: \nXR: \nP: \nDx: ';
+  soapTextarea.value = 'S: \nPE: \nXR: \nP: ';
   soapRestoreBtn.disabled = false;
 });
 
