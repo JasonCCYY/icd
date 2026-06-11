@@ -737,3 +737,90 @@ body {
   padding: 40px 20px;
   font-size: 0.95rem;
 }
+
+/* ─── Desktop layout (≥700px) ────────────────────────────────────────────── */
+@media (min-width: 700px) {
+  :root {
+    --tab-h: 44px;
+    --header-h: 46px;
+  }
+
+  body {
+    background: #dce3f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  #lock-screen {
+    background: #dce3f0;
+  }
+
+  /* App panel */
+  #app {
+    width: 460px;
+    height: min(92vh, 820px);
+    border-radius: 18px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.12);
+    overflow: hidden;
+  }
+
+  #main-header {
+    border-radius: 18px 18px 0 0;
+    padding: 10px 18px;
+  }
+
+  #tab-bar {
+    border-radius: 0 0 18px 18px;
+  }
+
+  .tab span { font-size: 0.78rem; }
+
+  /* Tighter padding on desktop */
+  #search-area,
+  #ops-search-area { padding: 10px 14px 5px; }
+
+  #results-area { padding: 2px 14px 0; }
+
+  #ops-results { padding: 4px 14px 14px; }
+
+  /* SOAP two-column layout */
+  #page-soap {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "tabs  tabs"
+      "left  right";
+    overflow: hidden;
+  }
+
+  #soap-top-tabs {
+    grid-area: tabs;
+    padding: 10px 14px 6px;
+  }
+
+  #soap-left-col {
+    grid-area: left;
+    overflow-y: auto;
+    border-right: 1px solid var(--border);
+  }
+
+  #soap-type-area { padding: 6px 12px 2px; }
+  #soap-picker    { padding: 6px 12px 0; }
+
+  #soap-editor-area {
+    grid-area: right;
+    padding: 8px 12px 10px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  #soap-textarea {
+    flex: 1;
+    resize: none;
+    min-height: unset;
+  }
+}
