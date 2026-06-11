@@ -636,39 +636,70 @@ async function renderCertTypes(sheet) {
   });
 }
 
+function certDiseaseLine() {
+  // Returns index of last disease line (non-process), or -1 if none
+  const lines = certTextarea.value.split('\n');
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (!lines[i].includes('接受治療')) return i;
+  }
+  return -1;
+}
+
 function renderCertPicker(typeData) {
   certPicker.hidden = false;
-  const disSect = certDisChips.closest('.soap-chip-section');
-  const procSect = certProcChips.closest('.soap-chip-section');
+  const numChips  = document.getElementById('cert-num-chips');
+  const disSect   = certDisChips.closest('.soap-chip-section');
+  const procSect  = certProcChips.closest('.soap-chip-section');
 
   const diseases  = typeData.disease  || [];
   const processes = typeData.process  || [];
 
+  numChips.innerHTML      = '';
   certDisChips.innerHTML  = '';
   certProcChips.innerHTML = '';
   disSect.hidden  = diseases.length === 0;
   procSect.hidden = processes.length === 0;
+
+  // Number chips 1.–5.
+  ['1.','2.','3.','4.','5.'].forEach(num => {
+    const chip = document.createElement('button');
+    chip.className = 'soap-chip';
+    chip.textContent = num;
+    chip.addEventListener('click', () => {
+      // Add a new numbered disease line before any process lines
+      const lines = certTextarea.value ? certTextarea.value.split('\n') : [];
+      const procIdx = lines.findIndex(l => l.includes('接受治療'));
+      if (procIdx === -1) {
+        lines.push(num);
+      } else {
+        lines.splice(procIdx, 0, num);
+      }
+      certTextarea.value = lines.join('\n');
+      chip.classList.add('soap-chip-used');
+      setTimeout(() => chip.classList.remove('soap-chip-used'), 600);
+    });
+    numChips.appendChild(chip);
+  });
 
   diseases.forEach(item => {
     const chip = document.createElement('button');
     chip.className = 'soap-chip';
     chip.textContent = item;
     chip.addEventListener('click', () => {
-      const lines = certTextarea.value.split('\n');
-      const hasProcess = lines.some(l => l.includes('接受治療'));
-      // Get or create disease line
-      let dis = (!hasProcess && lines.length > 0) ? lines[0] : '';
+      const lines = certTextarea.value ? certTextarea.value.split('\n') : [''];
+      // Find last disease line to append to
+      const procIdx = lines.findIndex(l => l.includes('接受治療'));
+      const lastDisIdx = procIdx === -1 ? lines.length - 1 : procIdx - 1;
+      let dis = lastDisIdx >= 0 ? lines[lastDisIdx] : '';
       const isInjury = /[傷折]/.test(item);
       if (isInjury) {
-        // Always at end; replace existing injury suffix to avoid duplicates
         dis = dis.replace(/(骨折|[扭擦挫]*傷)$/, '') + item;
       } else {
-        // Insert before existing injury suffix if present, otherwise append
         const m = dis.match(/^(.*?)(骨折|[扭擦挫]*傷)$/);
         dis = m ? m[1] + item + m[2] : dis + item;
       }
-      if (!hasProcess && lines.length > 0) {
-        lines[0] = dis;
+      if (lastDisIdx >= 0) {
+        lines[lastDisIdx] = dis;
       } else {
         lines.unshift(dis);
       }
