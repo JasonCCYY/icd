@@ -473,6 +473,8 @@ async function renderSoapTypes(sheet) {
       document.querySelectorAll('.soap-type-chip').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       renderSoapPicker(data[type]);
+      const defaults = { 'Trauma': 'S: pain after\nPE: \nXR: \nP: ' };
+      soapTextarea.value = defaults[type] || 'S: \nPE: \nXR: \nP: ';
     });
     soapTypeBtns.appendChild(btn);
   });
