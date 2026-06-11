@@ -554,12 +554,11 @@ body {
   cursor: pointer;
   border: 1px solid rgba(26,115,232,0.2);
   transition: background 0.15s;
-  margin-left: auto;
 }
 .ops-proc:active,
 .ops-proc.copied-flash { background: #c5d8ff; }
 
-.ops-proc-empty { color: var(--border); margin-left: auto; font-size: 0.85rem; }
+.ops-proc-empty { color: var(--border); font-size: 0.85rem; }
 
 /* ─── No results ──────────────────────────────────────────────────────────── */
 .no-results {
