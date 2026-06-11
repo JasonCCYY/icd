@@ -401,6 +401,167 @@ body {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ─── 手術碼 page ─────────────────────────────────────────────────────────── */
+#ops-search-area {
+  padding: 12px 16px 6px;
+  position: sticky;
+  top: 0;
+  z-index: 9;
+  background: var(--bg);
+}
+
+#ops-input-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+#ops-input-wrap:focus-within { border-color: var(--primary); }
+
+#ops-search-input {
+  flex: 1;
+  padding: 12px 14px;
+  font-size: 1rem;
+  border: none;
+  outline: none;
+  color: var(--text);
+  background: transparent;
+}
+
+#ops-clear-btn {
+  padding: 0 14px;
+  height: 44px;
+  background: none;
+  border: none;
+  color: var(--text-sub);
+  font-size: 1rem;
+  cursor: pointer;
+  display: none;
+}
+#ops-clear-btn.visible { display: flex; align-items: center; }
+
+#ops-actions { padding: 6px 2px 2px; display: flex; gap: 8px; }
+
+#ops-show-all-btn {
+  background: var(--accent);
+  border: 1.5px solid var(--primary);
+  color: var(--primary-dark);
+  border-radius: 20px;
+  padding: 5px 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+#ops-status {
+  font-size: 0.82rem;
+  color: var(--text-sub);
+  padding: 2px 18px 0;
+  min-height: 22px;
+}
+
+#ops-results {
+  padding: 4px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ops-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  border: 1.5px solid transparent;
+}
+
+.ops-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--primary);
+}
+
+.ops-code-badge {
+  background: rgba(255,255,255,0.22);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  font-family: 'Courier New', monospace;
+  padding: 4px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+  border: 1.5px solid rgba(255,255,255,0.35);
+}
+.ops-code-badge:active,
+.ops-code-badge.copied-flash { background: rgba(255,255,255,0.45); }
+
+.ops-name {
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  flex: 1;
+}
+
+.ops-card-body {
+  padding: 6px 0 4px;
+}
+
+.ops-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-bottom: 1px solid #f1f3f4;
+  flex-wrap: wrap;
+}
+.ops-row:last-child { border-bottom: none; }
+
+.ops-part {
+  font-size: 0.88rem;
+  color: var(--text);
+  min-width: 70px;
+}
+
+.ops-side {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+.ops-side-L { background: #e8f5e9; color: #2e7d32; }
+.ops-side-R { background: #fff3e0; color: #e65100; }
+
+.ops-arrow { color: var(--border); font-size: 0.8rem; }
+
+.ops-proc {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+  background: var(--accent);
+  padding: 3px 9px;
+  border-radius: 7px;
+  cursor: pointer;
+  border: 1px solid rgba(26,115,232,0.2);
+  transition: background 0.15s;
+  margin-left: auto;
+}
+.ops-proc:active,
+.ops-proc.copied-flash { background: #c5d8ff; }
+
+.ops-proc-empty { color: var(--border); margin-left: auto; font-size: 0.85rem; }
+
+/* ─── No results ──────────────────────────────────────────────────────────── */
 .no-results {
   text-align: center;
   color: var(--text-sub);

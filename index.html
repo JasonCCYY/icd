@@ -76,11 +76,20 @@
 
       <!-- 手術碼 page -->
       <div class="page" id="page-ops">
-        <div class="coming-soon">
-          <div class="coming-icon">🔪</div>
-          <h2>手術碼</h2>
-          <p>即將推出</p>
+        <div id="ops-search-area">
+          <div id="ops-input-wrap">
+            <input id="ops-search-input" type="text"
+              placeholder="搜尋名稱、手術碼、部位、處置碼…"
+              autocomplete="off" autocorrect="off"
+              autocapitalize="off" spellcheck="false" />
+            <button id="ops-clear-btn" aria-label="清除">✕</button>
+          </div>
+          <div id="ops-actions">
+            <button id="ops-show-all-btn">顯示全部</button>
+          </div>
         </div>
+        <div id="ops-status"></div>
+        <div id="ops-results"></div>
       </div>
 
     </main>

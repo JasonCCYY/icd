@@ -239,6 +239,176 @@ clearBtn.addEventListener('click', () => {
   searchInput.focus();
 });
 
+// ─── 手術碼 page ──────────────────────────────────────────────────────────────
+const OPS_CSV = 'https://docs.google.com/spreadsheets/d/1RDou3YdPadVhpKfbmtcHP14tWGJGgkI9PNHrOBCk9fY/export?format=csv&gid=1165237248';
+
+const opsSearchInput = document.getElementById('ops-search-input');
+const opsClearBtn    = document.getElementById('ops-clear-btn');
+const opsShowAllBtn  = document.getElementById('ops-show-all-btn');
+const opsStatusEl    = document.getElementById('ops-status');
+const opsResultsEl   = document.getElementById('ops-results');
+
+let opsData = null; // parsed rows
+
+async function loadOpsData() {
+  if (opsData) return opsData;
+  opsStatusEl.innerHTML = '<span class="spinner"></span>載入手術碼資料…';
+  try {
+    const resp = await fetch(OPS_CSV);
+    const text = await resp.text();
+    const rows = parseCSV(text);
+    const header = rows[0]; // [名稱, 手術碼, 部位, 左/右, 處置, ...]
+    opsData = rows.slice(1)
+      .filter(r => r.some(c => c.trim()))
+      .map(r => ({
+        name : (r[0] || '').trim(),
+        code : (r[1] || '').trim(),
+        part : (r[2] || '').trim(),
+        side : (r[3] || '').trim(),
+        proc : (r[4] || '').trim(),
+      }));
+    opsStatusEl.textContent = '';
+    return opsData;
+  } catch(e) {
+    opsStatusEl.textContent = '載入失敗，請確認 Google Sheet 已設為公開';
+    return [];
+  }
+}
+
+// Minimal CSV parser (handles quoted fields)
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQ) {
+      if (ch === '"' && text[i+1] === '"') { field += '"'; i++; }
+      else if (ch === '"') inQ = false;
+      else field += ch;
+    } else {
+      if (ch === '"') inQ = true;
+      else if (ch === ',') { row.push(field); field = ''; }
+      else if (ch === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else if (ch !== '\r') field += ch;
+    }
+  }
+  if (field || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+function opsSearch(query) {
+  if (!opsData) return [];
+  const q = query.toLowerCase().trim();
+  if (!q) return opsData;
+  return opsData.filter(r =>
+    r.name.toLowerCase().includes(q) ||
+    r.code.includes(q) ||
+    r.part.toLowerCase().includes(q) ||
+    r.side.toLowerCase().includes(q) ||
+    r.proc.toLowerCase().includes(q)
+  );
+}
+
+function renderOpsResults(items) {
+  opsResultsEl.innerHTML = '';
+  if (!items.length) {
+    opsResultsEl.innerHTML = '<div class="no-results">查無結果</div>';
+    return;
+  }
+
+  // Group by name+code
+  const groups = new Map();
+  for (const r of items) {
+    const key = `${r.name}||${r.code}`;
+    if (!groups.has(key)) groups.set(key, { name: r.name, code: r.code, rows: [] });
+    groups.get(key).rows.push(r);
+  }
+
+  for (const [, g] of groups) {
+    const card = document.createElement('div');
+    card.className = 'ops-card';
+
+    const header = document.createElement('div');
+    header.className = 'ops-card-header';
+    header.innerHTML = `
+      <span class="ops-code-badge" title="點擊複製">${escHtml(g.code)}</span>
+      <span class="ops-name">${escHtml(g.name)}</span>`;
+    const codeBadge = header.querySelector('.ops-code-badge');
+    codeBadge.addEventListener('click', e => {
+      e.stopPropagation();
+      copyText(g.code, codeBadge);
+    });
+    card.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'ops-card-body';
+    for (const r of g.rows) {
+      const row = document.createElement('div');
+      row.className = 'ops-row';
+      const sideLabel = r.side ? `<span class="ops-side ops-side-${r.side.toUpperCase()}">${escHtml(r.side)}</span>` : '';
+      const procHtml = r.proc
+        ? `<span class="ops-proc" title="點擊複製">${escHtml(r.proc)}</span>`
+        : '<span class="ops-proc-empty">—</span>';
+      row.innerHTML = `
+        <span class="ops-part">${escHtml(r.part)}</span>
+        ${sideLabel}
+        <span class="ops-arrow">→</span>
+        ${procHtml}`;
+      if (r.proc) {
+        row.querySelector('.ops-proc').addEventListener('click', function() {
+          copyText(r.proc, this);
+        });
+      }
+      body.appendChild(row);
+    }
+    card.appendChild(body);
+    opsResultsEl.appendChild(card);
+  }
+}
+
+function copyText(text, el) {
+  const clean = text.replace(/\./g, '');
+  navigator.clipboard.writeText(clean).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = clean; ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+  });
+  el.classList.add('copied-flash');
+  showToast(`已複製 ${clean}`);
+  setTimeout(() => el.classList.remove('copied-flash'), 900);
+}
+
+let opsDebounce = null;
+opsSearchInput.addEventListener('input', () => {
+  const q = opsSearchInput.value;
+  opsClearBtn.classList.toggle('visible', q.length > 0);
+  clearTimeout(opsDebounce);
+  opsDebounce = setTimeout(async () => {
+    await loadOpsData();
+    const results = opsSearch(q);
+    opsStatusEl.textContent = q.trim() && results.length ? `找到 ${results.length} 筆` : '';
+    renderOpsResults(results);
+  }, 250);
+});
+
+opsClearBtn.addEventListener('click', () => {
+  opsSearchInput.value = '';
+  opsClearBtn.classList.remove('visible');
+  opsResultsEl.innerHTML = '';
+  opsStatusEl.textContent = '';
+  opsSearchInput.focus();
+});
+
+opsShowAllBtn.addEventListener('click', async () => {
+  await loadOpsData();
+  opsSearchInput.value = '';
+  opsClearBtn.classList.remove('visible');
+  const results = opsSearch('');
+  opsStatusEl.textContent = `共 ${results.length} 筆`;
+  renderOpsResults(results);
+});
+
 // ─── Service worker ───────────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
