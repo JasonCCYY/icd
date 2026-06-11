@@ -634,6 +634,9 @@ async function renderCertTypes(sheet) {
     });
     certTypeBtns.appendChild(btn);
   });
+  // Auto-select 一般
+  const defaultBtn = certTypeBtns.querySelector('.soap-type-chip');
+  if (defaultBtn) defaultBtn.click();
 }
 
 // Strip "(以下空白)" suffix from disease portion
