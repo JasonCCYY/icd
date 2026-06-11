@@ -241,7 +241,7 @@ clearBtn.addEventListener('click', () => {
 
 // ─── 手術碼 page ──────────────────────────────────────────────────────────────
 // Apps Script Web App URL（部署後填入）
-const OPS_SCRIPT_URL = 'PASTE_YOUR_APPS_SCRIPT_URL_HERE';
+const OPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxCaJs3M9JxP6gm2jsSGD2mQn03y1Vdf2zmb1JSvCfJKxLm21HiUNnq--JaEevTeQno4Q/exec';
 const OPS_TOKEN      = 'cycicd-ops-X7m3K9pQ';
 
 const opsSearchInput = document.getElementById('ops-search-input');
