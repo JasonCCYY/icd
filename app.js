@@ -240,7 +240,9 @@ clearBtn.addEventListener('click', () => {
 });
 
 // ─── 手術碼 page ──────────────────────────────────────────────────────────────
-const OPS_CSV = 'https://docs.google.com/spreadsheets/d/1RDou3YdPadVhpKfbmtcHP14tWGJGgkI9PNHrOBCk9fY/export?format=csv&gid=1165237248';
+// Apps Script Web App URL（部署後填入）
+const OPS_SCRIPT_URL = 'PASTE_YOUR_APPS_SCRIPT_URL_HERE';
+const OPS_TOKEN      = 'cycicd-ops-X7m3K9pQ';
 
 const opsSearchInput = document.getElementById('ops-search-input');
 const opsClearBtn    = document.getElementById('ops-clear-btn');
@@ -252,49 +254,28 @@ let opsData = null; // parsed rows
 
 async function loadOpsData() {
   if (opsData) return opsData;
+  if (OPS_SCRIPT_URL === 'PASTE_YOUR_APPS_SCRIPT_URL_HERE') {
+    opsStatusEl.textContent = '尚未設定 Apps Script URL';
+    return [];
+  }
   opsStatusEl.innerHTML = '<span class="spinner"></span>載入手術碼資料…';
   try {
-    const resp = await fetch(OPS_CSV);
-    const text = await resp.text();
-    const rows = parseCSV(text);
-    const header = rows[0]; // [名稱, 手術碼, 部位, 左/右, 處置, ...]
-    opsData = rows.slice(1)
-      .filter(r => r.some(c => c.trim()))
-      .map(r => ({
-        name : (r[0] || '').trim(),
-        code : (r[1] || '').trim(),
-        part : (r[2] || '').trim(),
-        side : (r[3] || '').trim(),
-        proc : (r[4] || '').trim(),
-      }));
+    const url  = `${OPS_SCRIPT_URL}?token=${encodeURIComponent(OPS_TOKEN)}`;
+    const resp = await fetch(url);
+    const json = await resp.json();
+    if (json.status !== 'ok') {
+      opsStatusEl.textContent = `載入失敗：${json.status}`;
+      return [];
+    }
+    opsData = json.data;
     opsStatusEl.textContent = '';
     return opsData;
   } catch(e) {
-    opsStatusEl.textContent = '載入失敗，請確認 Google Sheet 已設為公開';
+    opsStatusEl.textContent = '載入失敗，請檢查網路或 Apps Script 設定';
     return [];
   }
 }
 
-// Minimal CSV parser (handles quoted fields)
-function parseCSV(text) {
-  const rows = [];
-  let row = [], field = '', inQ = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (inQ) {
-      if (ch === '"' && text[i+1] === '"') { field += '"'; i++; }
-      else if (ch === '"') inQ = false;
-      else field += ch;
-    } else {
-      if (ch === '"') inQ = true;
-      else if (ch === ',') { row.push(field); field = ''; }
-      else if (ch === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
-      else if (ch !== '\r') field += ch;
-    }
-  }
-  if (field || row.length) { row.push(field); rows.push(row); }
-  return rows;
-}
 
 function opsSearch(query) {
   if (!opsData) return [];
