@@ -433,6 +433,15 @@ function buildSoapText(lines) {
   return `S: ${lines.S||''}\nPE: ${lines.PE||''}\n${soapXrLabel}: ${lines.XR||''}\nP: ${lines.P||''}`;
 }
 
+function filterSoapText(text) {
+  return text.split('\n')
+    .filter(line => {
+      const m = line.match(/^[A-Z]+:\s*(.*)$/);
+      return !m || m[1].trim() !== '';
+    })
+    .join('\n');
+}
+
 function appendToLine(key, value) {
   const lines = soapLines();
   const cur = lines[key];
@@ -486,7 +495,7 @@ async function renderSoapTypes(sheet) {
         let text = buildSoapText(lines);
         if (typeData.dx?.[0]) text += `\n${typeData.dx[0]}`;
         soapTextarea.value = text;
-        navigator.clipboard.writeText(text).catch(() => {});
+        navigator.clipboard.writeText(filterSoapText(text)).catch(() => {});
         showToast('已複製！');
         soapLastVal = text;
         soapRestoreBtn.disabled = false;
@@ -561,7 +570,7 @@ soapTabBtns.forEach(btn => {
 // Editor buttons
 soapCopyBtn.addEventListener('click', () => {
   const text = soapTextarea.value;
-  navigator.clipboard.writeText(text).catch(() => {});
+  navigator.clipboard.writeText(filterSoapText(text)).catch(() => {});
   showToast('已複製 SOAP');
   soapLastVal = text;
   soapTextarea.value = `S: \nPE: \n${soapXrLabel}: \nP: `;
