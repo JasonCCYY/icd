@@ -636,13 +636,9 @@ async function renderCertTypes(sheet) {
   });
 }
 
-function certDiseaseLine() {
-  // Returns index of last disease line (non-process), or -1 if none
-  const lines = certTextarea.value.split('\n');
-  for (let i = lines.length - 1; i >= 0; i--) {
-    if (!lines[i].includes('接受治療')) return i;
-  }
-  return -1;
+// Strip "(以下空白)" suffix from disease portion
+function certStripSuffix(s) {
+  return s.replace(/\s*[（(]以下空白[）)]\s*$/, '');
 }
 
 function renderCertPicker(typeData) {
@@ -660,19 +656,21 @@ function renderCertPicker(typeData) {
   disSect.hidden  = diseases.length === 0;
   procSect.hidden = processes.length === 0;
 
-  // Number chips 1.–5.
+  // Number chips 1.–5. — appended inline with a space on the disease line
   ['1.','2.','3.','4.','5.'].forEach(num => {
     const chip = document.createElement('button');
     chip.className = 'soap-chip';
     chip.textContent = num;
     chip.addEventListener('click', () => {
-      // Add a new numbered disease line before any process lines
-      const lines = certTextarea.value ? certTextarea.value.split('\n') : [];
+      const lines = certTextarea.value ? certTextarea.value.split('\n') : [''];
       const procIdx = lines.findIndex(l => l.includes('接受治療'));
-      if (procIdx === -1) {
-        lines.push(num);
+      const disLine = procIdx === -1 ? lines[0] : (procIdx > 0 ? lines[0] : '');
+      const base = certStripSuffix(disLine || '');
+      const updated = base ? base + ' ' + num : num;
+      if (procIdx <= 0) {
+        lines[0] = updated + '(以下空白)';
       } else {
-        lines.splice(procIdx, 0, num);
+        lines[0] = updated + '(以下空白)';
       }
       certTextarea.value = lines.join('\n');
       chip.classList.add('soap-chip-used');
@@ -681,28 +679,29 @@ function renderCertPicker(typeData) {
     numChips.appendChild(chip);
   });
 
-  diseases.forEach(item => {
+  // Sort: non-injury chips first, injury/fracture chips last
+  const sorted = [...diseases].sort((a, b) => {
+    return (/[傷折]/.test(a) ? 1 : 0) - (/[傷折]/.test(b) ? 1 : 0);
+  });
+
+  sorted.forEach(item => {
     const chip = document.createElement('button');
     chip.className = 'soap-chip';
     chip.textContent = item;
     chip.addEventListener('click', () => {
       const lines = certTextarea.value ? certTextarea.value.split('\n') : [''];
-      // Find last disease line to append to
       const procIdx = lines.findIndex(l => l.includes('接受治療'));
-      const lastDisIdx = procIdx === -1 ? lines.length - 1 : procIdx - 1;
-      let dis = lastDisIdx >= 0 ? lines[lastDisIdx] : '';
+      // Work on the disease (first) line only — no newlines
+      let dis = certStripSuffix(procIdx === -1 ? lines[0] : (procIdx > 0 ? lines[0] : ''));
       const isInjury = /[傷折]/.test(item);
       if (isInjury) {
+        // Always at end; replace existing injury suffix
         dis = dis.replace(/(骨折|[扭擦挫]*傷)$/, '') + item;
       } else {
         const m = dis.match(/^(.*?)(骨折|[扭擦挫]*傷)$/);
         dis = m ? m[1] + item + m[2] : dis + item;
       }
-      if (lastDisIdx >= 0) {
-        lines[lastDisIdx] = dis;
-      } else {
-        lines.unshift(dis);
-      }
+      lines[0] = dis + '(以下空白)';
       certTextarea.value = lines.join('\n');
       chip.classList.add('soap-chip-used');
       setTimeout(() => chip.classList.remove('soap-chip-used'), 600);
