@@ -589,6 +589,147 @@ document.querySelectorAll('.tab').forEach(btn => {
   }
 });
 
+// ─── 診斷書 page ──────────────────────────────────────────────────────────────
+const certTabBtns   = document.querySelectorAll('[data-cert-sheet]');
+const certTypeBtns  = document.getElementById('cert-type-btns');
+const certPicker    = document.getElementById('cert-picker');
+const certDisChips  = document.getElementById('cert-disease-chips');
+const certProcChips = document.getElementById('cert-process-chips');
+const certTextarea  = document.getElementById('cert-textarea');
+const certCopyBtn   = document.getElementById('cert-copy-btn');
+const certRestoreBtn= document.getElementById('cert-restore-btn');
+
+let certSheet   = '診斷書門診';
+let certLastVal = '';
+const certCache = {};
+
+async function loadCertData(sheet) {
+  if (certCache[sheet]) return certCache[sheet];
+  try {
+    const url  = `${SOAP_SCRIPT_URL}?token=${encodeURIComponent(SOAP_TOKEN)}&sheet=${encodeURIComponent(sheet)}`;
+    const resp = await fetch(url);
+    const json = await resp.json();
+    if (json.status === 'ok') { certCache[sheet] = json.data; return json.data; }
+  } catch(e) {}
+  return null;
+}
+
+async function renderCertTypes(sheet) {
+  certTypeBtns.innerHTML = '<span style="color:#aaa;font-size:.85rem">載入中…</span>';
+  certPicker.hidden = true;
+  const data = await loadCertData(sheet);
+  certTypeBtns.innerHTML = '';
+  if (!data) {
+    certTypeBtns.innerHTML = '<span style="color:#d93025;font-size:.85rem">載入失敗</span>';
+    return;
+  }
+  Object.keys(data).forEach(type => {
+    const btn = document.createElement('button');
+    btn.className = 'soap-type-chip';
+    btn.textContent = type;
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#cert-type-btns .soap-type-chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderCertPicker(data[type]);
+    });
+    certTypeBtns.appendChild(btn);
+  });
+}
+
+function renderCertPicker(typeData) {
+  certPicker.hidden = false;
+  const disSect = certDisChips.closest('.soap-chip-section');
+  const procSect = certProcChips.closest('.soap-chip-section');
+
+  const diseases  = typeData.disease  || [];
+  const processes = typeData.process  || [];
+
+  certDisChips.innerHTML  = '';
+  certProcChips.innerHTML = '';
+  disSect.hidden  = diseases.length === 0;
+  procSect.hidden = processes.length === 0;
+
+  diseases.forEach(item => {
+    const chip = document.createElement('button');
+    chip.className = 'soap-chip';
+    chip.textContent = item;
+    chip.addEventListener('click', () => {
+      // Replace / set first line with disease name
+      const lines = certTextarea.value.split('\n');
+      // Check if first line looks like a previous disease (non-process)
+      if (lines.length > 0 && !lines[0].includes('接受治療') && !lines[0].includes('，')) {
+        lines[0] = item;
+      } else {
+        lines.unshift(item);
+      }
+      certTextarea.value = lines.join('\n');
+      chip.classList.add('soap-chip-used');
+      setTimeout(() => chip.classList.remove('soap-chip-used'), 600);
+    });
+    certDisChips.appendChild(chip);
+  });
+
+  processes.forEach(item => {
+    const chip = document.createElement('button');
+    chip.className = 'soap-chip';
+    chip.textContent = item;
+    chip.addEventListener('click', () => {
+      certInsertProcess(item);
+      chip.classList.add('soap-chip-used');
+      setTimeout(() => chip.classList.remove('soap-chip-used'), 600);
+    });
+    certProcChips.appendChild(chip);
+  });
+}
+
+function certInsertProcess(item) {
+  const text = certTextarea.value;
+  if (item.includes('接受治療')) {
+    // Main sentence: preserve disease line, replace process part
+    const firstLine = text.split('\n')[0] || '';
+    const isDisease = firstLine && !firstLine.includes('接受治療');
+    certTextarea.value = isDisease ? `${firstLine}\n${item}` : item;
+  } else if (text.includes('，建議')) {
+    // Insert item before "，建議"
+    certTextarea.value = text.replace('，建議', `，${item}，建議`);
+  } else if (text.includes('接受治療，')) {
+    // Insert after "接受治療，"
+    certTextarea.value = text.replace('接受治療，', `接受治療，${item}，`);
+  } else {
+    // No main sentence: append directly
+    certTextarea.value = text ? `${text}\n${item}` : item;
+  }
+}
+
+certTabBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    certTabBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    certSheet = btn.dataset.certSheet;
+    renderCertTypes(certSheet);
+  });
+});
+
+certCopyBtn.addEventListener('click', () => {
+  const text = certTextarea.value;
+  navigator.clipboard.writeText(text).catch(() => {});
+  showToast('已複製診斷書');
+  certLastVal = text;
+  certTextarea.value = '';
+  certRestoreBtn.disabled = false;
+});
+
+certRestoreBtn.addEventListener('click', () => {
+  certTextarea.value = certLastVal;
+  certRestoreBtn.disabled = true;
+});
+
+document.querySelectorAll('.tab').forEach(btn => {
+  if (btn.dataset.page === 'cert') {
+    btn.addEventListener('click', () => renderCertTypes(certSheet), { once: false });
+  }
+});
+
 // ─── Service worker ───────────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

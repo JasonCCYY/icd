@@ -36,6 +36,25 @@ function doGet(e) {
       return output(data, 'ok');
     }
 
+    // ── 診斷書分頁 ────────────────────────────────────────────────────────────
+    // Columns: 類型(0) 疾病(1) 過程(2)
+    if (sheetName.startsWith('診斷書')) {
+      const grouped = {};
+      rows.forEach(r => {
+        const type = String(r[0]||'').trim();
+        if (!type) return;
+        if (!grouped[type]) grouped[type] = { disease:[], process:[] };
+        const add = (arr, val) => { const v = String(val||'').trim(); if (v) arr.push(v); };
+        add(grouped[type].disease, r[1]);
+        add(grouped[type].process, r[2]);
+      });
+      Object.values(grouped).forEach(g => {
+        g.disease = [...new Set(g.disease)];
+        g.process = [...new Set(g.process)];
+      });
+      return output(grouped, 'ok');
+    }
+
     // ── SOAP 分頁（中正 / 門診）─────────────────────────────────────────────
     // Columns: 類型(0) S(1) PE(2) XR(3) P(4) 診斷碼(5)
     const grouped = {};

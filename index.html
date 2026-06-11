@@ -105,10 +105,32 @@
 
       <!-- 診斷書 page -->
       <div class="page" id="page-cert">
-        <div class="coming-soon">
-          <div class="coming-icon">📄</div>
-          <h2>診斷書</h2>
-          <p>即將推出</p>
+        <div id="cert-top-tabs">
+          <button class="soap-tab-btn active" data-cert-sheet="診斷書門診">門診</button>
+          <button class="soap-tab-btn" data-cert-sheet="診斷書中正">中正</button>
+        </div>
+        <div id="cert-type-area">
+          <div id="cert-type-label">選擇類型</div>
+          <div id="cert-type-btns"></div>
+        </div>
+        <div id="cert-picker" hidden>
+          <div id="cert-chips-area">
+            <div class="soap-chip-section" id="cert-disease-section">
+              <span class="soap-section-label">疾病</span>
+              <div class="soap-chips" id="cert-disease-chips"></div>
+            </div>
+            <div class="soap-chip-section" id="cert-process-section">
+              <span class="soap-section-label">過程</span>
+              <div class="soap-chips" id="cert-process-chips"></div>
+            </div>
+          </div>
+        </div>
+        <div id="cert-editor-area">
+          <textarea id="cert-textarea" placeholder="點選疾病與過程…"></textarea>
+          <div id="cert-editor-btns">
+            <button id="cert-copy-btn">複製</button>
+            <button id="cert-restore-btn" disabled>恢復</button>
+          </div>
         </div>
       </div>
 
