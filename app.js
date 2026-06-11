@@ -654,16 +654,23 @@ function renderCertPicker(typeData) {
     chip.className = 'soap-chip';
     chip.textContent = item;
     chip.addEventListener('click', () => {
-      // Append to disease line (first line), or start one if not present
       const lines = certTextarea.value.split('\n');
       const hasProcess = lines.some(l => l.includes('接受治療'));
-      const disLineIdx = hasProcess ? -1 : 0;
-      if (!hasProcess && lines.length > 0 && lines[0] !== '') {
-        lines[0] = lines[0] + item;
-      } else if (!hasProcess && lines.length > 0) {
-        lines[0] = item;
+      // Get or create disease line
+      let dis = (!hasProcess && lines.length > 0) ? lines[0] : '';
+      const isInjury = /[傷折]/.test(item);
+      if (isInjury) {
+        // Always at end; replace existing injury suffix to avoid duplicates
+        dis = dis.replace(/(骨折|[扭擦挫]*傷)$/, '') + item;
       } else {
-        lines.unshift(item);
+        // Insert before existing injury suffix if present, otherwise append
+        const m = dis.match(/^(.*?)(骨折|[扭擦挫]*傷)$/);
+        dis = m ? m[1] + item + m[2] : dis + item;
+      }
+      if (!hasProcess && lines.length > 0) {
+        lines[0] = dis;
+      } else {
+        lines.unshift(dis);
       }
       certTextarea.value = lines.join('\n');
       chip.classList.add('soap-chip-used');
