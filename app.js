@@ -390,6 +390,157 @@ opsShowAllBtn.addEventListener('click', async () => {
   renderOpsResults(results);
 });
 
+// ─── SOAP page ────────────────────────────────────────────────────────────────
+const SOAP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxCaJs3M9JxP6gm2jsSGD2mQn03y1Vdf2zmb1JSvCfJKxLm21HiUNnq--JaEevTeQno4Q/exec';
+const SOAP_TOKEN      = 'cycicd-ops-X7m3K9pQ';
+
+const soapTabBtns   = document.querySelectorAll('.soap-tab-btn');
+const soapTypeBtns  = document.getElementById('soap-type-btns');
+const soapPicker    = document.getElementById('soap-picker');
+const soapDateBtn   = document.getElementById('soap-date-btn');
+const soapTextarea  = document.getElementById('soap-textarea');
+const soapCopyBtn   = document.getElementById('soap-copy-btn');
+const soapClearBtn  = document.getElementById('soap-clear-btn');
+const soapRestoreBtn= document.getElementById('soap-restore-btn');
+
+let soapCache   = {};        // { sheetName: groupedData }
+let soapSheet   = 'SOAP中正';
+let soapLastVal = '';
+
+// helpers
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function soapLines() {
+  const text = soapTextarea.value;
+  const parse = {};
+  for (const key of ['S','PE','XR','P','Dx']) {
+    const m = text.match(new RegExp(`^${key}:(.*)$`, 'm'));
+    parse[key] = m ? m[1].trim() : '';
+  }
+  return parse;
+}
+
+function buildSoapText(lines) {
+  return `S: ${lines.S||''}\nPE: ${lines.PE||''}\nXR: ${lines.XR||''}\nP: ${lines.P||''}\nDx: ${lines.Dx||''}`;
+}
+
+function appendToLine(key, value) {
+  const lines = soapLines();
+  const cur = lines[key];
+  lines[key] = cur ? `${cur}, ${value}` : value;
+  soapTextarea.value = buildSoapText(lines);
+}
+
+// Date chip
+soapDateBtn.textContent = todayStr();
+soapDateBtn.addEventListener('click', () => {
+  soapDateBtn.textContent = todayStr();
+  appendToLine('S', todayStr());
+});
+
+// Load SOAP data
+async function loadSoapData(sheet) {
+  if (soapCache[sheet]) return soapCache[sheet];
+  try {
+    const url  = `${SOAP_SCRIPT_URL}?token=${encodeURIComponent(SOAP_TOKEN)}&sheet=${encodeURIComponent(sheet)}`;
+    const resp = await fetch(url);
+    const json = await resp.json();
+    if (json.status === 'ok') { soapCache[sheet] = json.data; return json.data; }
+  } catch(e) {}
+  return null;
+}
+
+// Render type buttons
+async function renderSoapTypes(sheet) {
+  soapTypeBtns.innerHTML = '<span style="color:#aaa;font-size:.85rem">載入中…</span>';
+  soapPicker.hidden = true;
+  const data = await loadSoapData(sheet);
+  soapTypeBtns.innerHTML = '';
+  if (!data) {
+    soapTypeBtns.innerHTML = '<span style="color:#d93025;font-size:.85rem">載入失敗</span>';
+    return;
+  }
+  Object.keys(data).forEach(type => {
+    const btn = document.createElement('button');
+    btn.className = 'soap-type-chip';
+    btn.textContent = type;
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.soap-type-chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderSoapPicker(data[type]);
+    });
+    soapTypeBtns.appendChild(btn);
+  });
+}
+
+// Render chips for selected type
+function renderSoapPicker(typeData) {
+  soapPicker.hidden = false;
+  const sections = [
+    { id: 'soap-s-chips',  key: 'S',  line: 'S'  },
+    { id: 'soap-pe-chips', key: 'PE', line: 'PE' },
+    { id: 'soap-xr-chips', key: 'XR', line: 'XR' },
+    { id: 'soap-p-chips',  key: 'P',  line: 'P'  },
+    { id: 'soap-dx-chips', key: 'dx', line: 'Dx' },
+  ];
+  sections.forEach(({ id, key, line }) => {
+    const container = document.getElementById(id);
+    const section   = container.closest('.soap-chip-section');
+    const items     = typeData[key] || [];
+    container.innerHTML = '';
+    section.hidden = items.length === 0;
+    items.forEach(item => {
+      const chip = document.createElement('button');
+      chip.className = 'soap-chip';
+      chip.textContent = item;
+      chip.addEventListener('click', () => {
+        appendToLine(line, item);
+        chip.classList.add('soap-chip-used');
+        setTimeout(() => chip.classList.remove('soap-chip-used'), 600);
+      });
+      container.appendChild(chip);
+    });
+  });
+}
+
+// Tab switch
+soapTabBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    soapTabBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    soapSheet = btn.dataset.soapSheet;
+    renderSoapTypes(soapSheet);
+  });
+});
+
+// Editor buttons
+soapCopyBtn.addEventListener('click', () => {
+  const text = soapTextarea.value;
+  navigator.clipboard.writeText(text).catch(() => {});
+  showToast('已複製 SOAP');
+});
+
+soapClearBtn.addEventListener('click', () => {
+  soapLastVal = soapTextarea.value;
+  soapTextarea.value = 'S: \nPE: \nXR: \nP: \nDx: ';
+  soapRestoreBtn.disabled = false;
+});
+
+soapRestoreBtn.addEventListener('click', () => {
+  soapTextarea.value = soapLastVal;
+  soapRestoreBtn.disabled = true;
+});
+
+// Load when SOAP tab is activated
+document.querySelectorAll('.tab').forEach(btn => {
+  if (btn.dataset.page === 'soap') {
+    btn.addEventListener('click', () => renderSoapTypes(soapSheet), { once: false });
+  }
+});
+
 // ─── Service worker ───────────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
