@@ -582,9 +582,8 @@ function renderSoapPicker(typeData) {
           }
           soapTextarea.value = buildSoapText(lines);
         } else if (line === 'S') {
-          // S chips: direct append, no ", " separator
           const lines = soapLines();
-          lines.S = (lines.S || '') + item;
+          lines.S = lines.S ? lines.S + ' ' + item : item;
           soapTextarea.value = buildSoapText(lines);
         } else if (line === 'XR') {
           appendToLine('XR', item.startsWith('A: ') ? item.slice(3) : item);
