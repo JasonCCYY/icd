@@ -252,12 +252,31 @@ const opsResultsEl   = document.getElementById('ops-results');
 
 let opsData = null; // parsed rows
 
+// ─── localStorage cache (private device only) ─────────────────────────────
+const LS_TTL = 6 * 60 * 60 * 1000; // 6 hours
+
+function lsGet(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const { ts, data } = JSON.parse(raw);
+    if (Date.now() - ts > LS_TTL) { localStorage.removeItem(key); return null; }
+    return data;
+  } catch(e) { return null; }
+}
+
+function lsSet(key, data) {
+  try { localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data })); } catch(e) {}
+}
+
 async function loadOpsData() {
   if (opsData) return opsData;
   if (OPS_SCRIPT_URL === 'PASTE_YOUR_APPS_SCRIPT_URL_HERE') {
     opsStatusEl.textContent = '尚未設定 Apps Script URL';
     return [];
   }
+  const cached = lsGet('ops');
+  if (cached) { opsData = cached; opsStatusEl.textContent = ''; return opsData; }
   opsStatusEl.innerHTML = '<span class="spinner"></span>載入手術碼資料…';
   try {
     const url  = `${OPS_SCRIPT_URL}?token=${encodeURIComponent(OPS_TOKEN)}`;
@@ -268,6 +287,7 @@ async function loadOpsData() {
       return [];
     }
     opsData = json.data;
+    lsSet('ops', opsData);
     opsStatusEl.textContent = '';
     return opsData;
   } catch(e) {
@@ -500,11 +520,17 @@ soapDateBtn.addEventListener('click', () => {
 // Load SOAP data
 async function loadSoapData(sheet) {
   if (soapCache[sheet]) return soapCache[sheet];
+  const cached = lsGet(`soap_${sheet}`);
+  if (cached) { soapCache[sheet] = cached; return cached; }
   try {
     const url  = `${SOAP_SCRIPT_URL}?token=${encodeURIComponent(SOAP_TOKEN)}&sheet=${encodeURIComponent(sheet)}`;
     const resp = await fetch(url);
     const json = await resp.json();
-    if (json.status === 'ok') { soapCache[sheet] = json.data; return json.data; }
+    if (json.status === 'ok') {
+      soapCache[sheet] = json.data;
+      lsSet(`soap_${sheet}`, json.data);
+      return json.data;
+    }
   } catch(e) {}
   return null;
 }
@@ -646,11 +672,17 @@ const certCache = {};
 
 async function loadCertData(sheet) {
   if (certCache[sheet]) return certCache[sheet];
+  const cached = lsGet(`cert_${sheet}`);
+  if (cached) { certCache[sheet] = cached; return cached; }
   try {
     const url  = `${SOAP_SCRIPT_URL}?token=${encodeURIComponent(SOAP_TOKEN)}&sheet=${encodeURIComponent(sheet)}`;
     const resp = await fetch(url);
     const json = await resp.json();
-    if (json.status === 'ok') { certCache[sheet] = json.data; return json.data; }
+    if (json.status === 'ok') {
+      certCache[sheet] = json.data;
+      lsSet(`cert_${sheet}`, json.data);
+      return json.data;
+    }
   } catch(e) {}
   return null;
 }
