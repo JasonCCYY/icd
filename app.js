@@ -278,22 +278,16 @@ async function loadOpsData() {
   const cached = lsGet('ops');
   if (cached) { opsData = cached; opsStatusEl.textContent = ''; return opsData; }
   opsStatusEl.innerHTML = '<span class="spinner"></span>載入手術碼資料…';
-  try {
-    const url  = `${OPS_SCRIPT_URL}?token=${encodeURIComponent(OPS_TOKEN)}`;
-    const resp = await fetch(url);
-    const json = await resp.json();
-    if (json.status !== 'ok') {
-      opsStatusEl.textContent = `載入失敗：${json.status}`;
-      return [];
-    }
-    opsData = json.data;
+  const url = `${OPS_SCRIPT_URL}?token=${encodeURIComponent(OPS_TOKEN)}`;
+  const data = await fetchWithRetry(url);
+  if (data) {
+    opsData = data;
     lsSet('ops', opsData);
     opsStatusEl.textContent = '';
     return opsData;
-  } catch(e) {
-    opsStatusEl.textContent = '載入失敗，請檢查網路或 Apps Script 設定';
-    return [];
   }
+  opsStatusEl.textContent = '載入失敗，請按右上角重新整理';
+  return [];
 }
 
 
@@ -518,21 +512,26 @@ soapDateBtn.addEventListener('click', () => {
 });
 
 // Load SOAP data
+async function fetchWithRetry(url, retries = 2, delay = 1500) {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const resp = await fetch(url);
+      const json = await resp.json();
+      if (json.status === 'ok') return json.data;
+    } catch(e) {}
+    if (i < retries) await new Promise(r => setTimeout(r, delay));
+  }
+  return null;
+}
+
 async function loadSoapData(sheet) {
   if (soapCache[sheet]) return soapCache[sheet];
   const cached = lsGet(`soap_${sheet}`);
   if (cached) { soapCache[sheet] = cached; return cached; }
-  try {
-    const url  = `${SOAP_SCRIPT_URL}?token=${encodeURIComponent(SOAP_TOKEN)}&sheet=${encodeURIComponent(sheet)}`;
-    const resp = await fetch(url);
-    const json = await resp.json();
-    if (json.status === 'ok') {
-      soapCache[sheet] = json.data;
-      lsSet(`soap_${sheet}`, json.data);
-      return json.data;
-    }
-  } catch(e) {}
-  return null;
+  const url = `${SOAP_SCRIPT_URL}?token=${encodeURIComponent(SOAP_TOKEN)}&sheet=${encodeURIComponent(sheet)}`;
+  const data = await fetchWithRetry(url);
+  if (data) { soapCache[sheet] = data; lsSet(`soap_${sheet}`, data); }
+  return data;
 }
 
 // Render type buttons
@@ -674,17 +673,10 @@ async function loadCertData(sheet) {
   if (certCache[sheet]) return certCache[sheet];
   const cached = lsGet(`cert_${sheet}`);
   if (cached) { certCache[sheet] = cached; return cached; }
-  try {
-    const url  = `${SOAP_SCRIPT_URL}?token=${encodeURIComponent(SOAP_TOKEN)}&sheet=${encodeURIComponent(sheet)}`;
-    const resp = await fetch(url);
-    const json = await resp.json();
-    if (json.status === 'ok') {
-      certCache[sheet] = json.data;
-      lsSet(`cert_${sheet}`, json.data);
-      return json.data;
-    }
-  } catch(e) {}
-  return null;
+  const url = `${SOAP_SCRIPT_URL}?token=${encodeURIComponent(SOAP_TOKEN)}&sheet=${encodeURIComponent(sheet)}`;
+  const data = await fetchWithRetry(url);
+  if (data) { certCache[sheet] = data; lsSet(`cert_${sheet}`, data); }
+  return data;
 }
 
 async function renderCertTypes(sheet) {
