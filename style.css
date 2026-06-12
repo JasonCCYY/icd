@@ -17,7 +17,7 @@
   --copy-bg: #e6f4ea;
   --radius: 12px;
   --shadow: 0 2px 8px rgba(0,0,0,0.1);
-  --tab-h: 52px;
+  --tab-h: 62px;
   --header-h: 52px;
 }
 
@@ -221,16 +221,12 @@ body {
 .tab svg { display: none; }
 
 .tab span {
-  font-size: 0.85rem;
-  font-weight: 500;
+  font-size: 0.88rem;
+  font-weight: 700;
 }
 
 .tab.active {
   color: var(--primary);
-}
-
-.tab.active span {
-  font-weight: 700;
 }
 
 /* ─── ICD search ──────────────────────────────────────────────────────────── */
