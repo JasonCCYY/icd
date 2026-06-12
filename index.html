@@ -195,7 +195,7 @@
     const btn = document.createElement('button');
     btn.id = 'back-to-ortho';
     btn.textContent = '← 手術紀錄';
-    btn.onclick = () => window.close();
+    btn.onclick = () => window.history.back();
     document.getElementById('main-header').insertBefore(btn, document.getElementById('main-header').firstChild);
   }
 
