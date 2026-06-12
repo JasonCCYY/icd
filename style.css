@@ -143,6 +143,23 @@ body {
 #back-to-ortho:active { opacity: 0.75; }
 
 /* Header */
+#refresh-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.85);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+#refresh-btn:active { background: rgba(255,255,255,0.2); }
+#refresh-btn svg { width: 22px; height: 22px; }
+
 #main-header {
   background: var(--primary);
   color: #fff;

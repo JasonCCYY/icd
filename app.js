@@ -848,6 +848,14 @@ function prefetchAll() {
   loadCertData('診斷書門診');
 }
 
+// ─── Refresh button ───────────────────────────────────────────────────────────
+document.getElementById('refresh-btn').addEventListener('click', () => {
+  ['ops','soap_SOAP中正','soap_SOAP門診','cert_診斷書中正','cert_診斷書門診'].forEach(k => {
+    try { localStorage.removeItem(k); } catch(e) {}
+  });
+  location.reload();
+});
+
 // ─── Service worker ───────────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
