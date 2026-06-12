@@ -182,37 +182,65 @@
   </div>
 
   <script>
-    const PW_HASH = '6ed09607ae0f7186a908a39b29e64cea658d96283aa28d37cebf3af395911895';
-    async function sha256(str) {
-      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
-    }
-    async function tryUnlock() {
-      const val = document.getElementById('pw-input').value;
-      const hash = await sha256(val);
-      if (hash === PW_HASH) {
-        sessionStorage.setItem('icd_auth', '1');
-        document.getElementById('lock-screen').remove();
-        document.getElementById('app').hidden = false;
-        setTimeout(() => { if (typeof prefetchAll === 'function') prefetchAll(); }, 300);
-      } else {
-        const err = document.getElementById('pw-error');
-        err.textContent = '密碼錯誤';
-        document.getElementById('pw-input').value = '';
-        setTimeout(() => { err.textContent = ''; }, 2000);
-      }
-    }
-    if (sessionStorage.getItem('icd_auth') === '1') {
-      document.getElementById('lock-screen').remove();
-      document.getElementById('app').hidden = false;
+  const PW_HASH = '6ed09607ae0f7186a908a39b29e64cea658d96283aa28d37cebf3af395911895';
+
+  // 私人模式：URL 帶 ?p=1 時存入 sessionStorage，之後重新整理也會保持
+  if (new URLSearchParams(location.search).get('p') === '1') {
+    sessionStorage.setItem('icd_private', '1');
+  }
+
+  function addBackBtn() {
+    if (sessionStorage.getItem('icd_private') !== '1') return;
+    if (document.getElementById('back-to-ortho')) return;
+    const btn = document.createElement('button');
+    btn.id = 'back-to-ortho';
+    btn.textContent = '← 手術紀錄';
+    btn.onclick = () => window.close();
+    document.getElementById('main-header').insertBefore(btn, document.getElementById('main-header').firstChild);
+  }
+
+  async function sha256(str) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+  async function tryUnlock() {
+    const val = document.getElementById('pw-input').value;
+    const hash = await sha256(val);
+    if (hash === PW_HASH) {
+      doUnlock();
     } else {
-      document.getElementById('pw-btn').addEventListener('click', tryUnlock);
-      document.getElementById('pw-input').addEventListener('keydown', e => {
-        if (e.key === 'Enter') tryUnlock();
-      });
-      setTimeout(() => document.getElementById('pw-input').focus(), 100);
+      const err = document.getElementById('pw-error');
+      err.textContent = '密碼錯誤';
+      document.getElementById('pw-input').value = '';
+      setTimeout(() => { err.textContent = ''; }, 2000);
     }
-  </script>
+  }
+  function bindLock() {
+    document.getElementById('pw-btn').addEventListener('click', tryUnlock);
+    document.getElementById('pw-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') tryUnlock();
+    });
+    setTimeout(() => document.getElementById('pw-input').focus(), 100);
+  }
+  function doUnlock() {
+    sessionStorage.setItem('icd_auth', '1');
+    document.getElementById('lock-screen').remove();
+    document.getElementById('app').hidden = false;
+    addBackBtn();
+    setTimeout(() => { if (typeof prefetchAll === 'function') prefetchAll(); }, 300);
+  }
+  if (sessionStorage.getItem('icd_auth') === '1') {
+    document.getElementById('lock-screen').remove();
+    document.getElementById('app').hidden = false;
+    addBackBtn();
+  } else if (location.hash) {
+    const raw = location.hash.slice(1);
+    history.replaceState(null, '', location.pathname + location.search);
+    sha256(raw).then(h => { if (h === PW_HASH) doUnlock(); else bindLock(); });
+  } else {
+    bindLock();
+  }
+</script>
 
   <script src="app.js"></script>
 </body>
