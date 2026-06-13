@@ -17,7 +17,7 @@
   --copy-bg: #e6f4ea;
   --radius: 12px;
   --shadow: 0 2px 8px rgba(0,0,0,0.1);
-  --tab-h: 62px;
+  --tab-h: 72px;
   --header-h: 52px;
 }
 
@@ -238,7 +238,7 @@ body {
 .tab svg { display: none; }
 
 .tab span {
-  font-size: 0.88rem;
+  font-size: 0.92rem;
   font-weight: 700;
 }
 
