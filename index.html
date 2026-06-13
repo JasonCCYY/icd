@@ -143,6 +143,11 @@
 
       <!-- 手術碼 page -->
       <div class="page" id="page-ops">
+        <div id="ops-top-tabs">
+          <button class="ops-tab-btn active" data-ops-tab="ops">手術碼</button>
+          <button class="ops-tab-btn" data-ops-tab="notes">備註</button>
+        </div>
+        <div id="ops-tab-ops">
         <div id="ops-search-area">
           <div id="ops-input-wrap">
             <input id="ops-search-input" type="text"
@@ -157,6 +162,14 @@
         </div>
         <div id="ops-status"></div>
         <div id="ops-results"></div>
+        </div><!-- /ops-tab-ops -->
+        <div id="ops-tab-notes" hidden>
+          <div class="coming-soon">
+            <div class="coming-icon">📝</div>
+            <h2>備註</h2>
+            <p>即將推出</p>
+          </div>
+        </div>
       </div>
 
     </main>

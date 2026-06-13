@@ -250,6 +250,16 @@ const opsShowAllBtn  = document.getElementById('ops-show-all-btn');
 const opsStatusEl    = document.getElementById('ops-status');
 const opsResultsEl   = document.getElementById('ops-results');
 
+document.querySelectorAll('.ops-tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ops-tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.opsTab;
+    document.getElementById('ops-tab-ops').hidden   = tab !== 'ops';
+    document.getElementById('ops-tab-notes').hidden = tab !== 'notes';
+  });
+});
+
 let opsData = null; // parsed rows
 
 // ─── localStorage cache (private device only) ─────────────────────────────
