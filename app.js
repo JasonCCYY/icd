@@ -741,9 +741,9 @@ function renderCertPicker(typeData) {
     chip.textContent = num;
     addChipEvents(chip, () => {
       const lines = certTextarea.value ? certTextarea.value.split('\n') : [''];
-      const procIdx = lines.findIndex(l => l.includes('接受治療'));
-      const disLine = procIdx === -1 ? lines[0] : (procIdx > 0 ? lines[0] : '');
-      const base = certStripSuffix(disLine || '');
+      let procIdx = lines.findIndex(l => l.includes('接受治療'));
+      if (procIdx === 0) { lines.unshift(''); procIdx = 1; }
+      const base = certStripSuffix(lines[0] || '');
       lines[0] = (base ? base + ' ' + num : num) + '(以下空白)';
       certTextarea.value = lines.join('\n');
       chip.classList.add('soap-chip-used');
@@ -763,8 +763,10 @@ function renderCertPicker(typeData) {
     chip.textContent = item;
     addChipEvents(chip, () => {
       const lines = certTextarea.value ? certTextarea.value.split('\n') : [''];
-      const procIdx = lines.findIndex(l => l.includes('接受治療'));
-      let dis = certStripSuffix(procIdx === -1 ? lines[0] : (procIdx > 0 ? lines[0] : ''));
+      let procIdx = lines.findIndex(l => l.includes('接受治療'));
+      // If process is at line 0 (no disease line yet), insert empty disease line first
+      if (procIdx === 0) { lines.unshift(''); procIdx = 1; }
+      let dis = certStripSuffix(procIdx === -1 ? lines[0] : lines[0]);
       const isInjury = /[傷折]/.test(item);
       if (isInjury) {
         dis = dis.replace(/(骨折|[扭擦挫]*傷)$/, '') + item;
