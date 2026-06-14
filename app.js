@@ -461,8 +461,9 @@ function todayRocFull() {
 }
 function fillCertDate(text) {
   const { roc, mm, dd } = todayRocFull();
-  // Replace 民國NNN年月日 → 民國{roc}年{mm}月{dd}日
-  return text.replace(/民國\d*年月日/g, `民國${roc}年${mm}月${dd}日`);
+  return text
+    .replace(/民國\d*年月日/g, `民國${roc}年${mm}月${dd}日`)
+    .replace(/月日/g, `${mm}月${dd}日`);
 }
 
 let soapXrLabel = 'XR';
