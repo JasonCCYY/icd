@@ -460,13 +460,13 @@ function todayRocFull() {
   return { roc, mm, dd };
 }
 function fillCertDate(text) {
-  const { roc, mm, dd } = todayRocFull();
-  if (/至月日/.test(text)) {
-    // Has 至月日: only fill the standalone 月日 (after 至), leave 民國NNN年月日 intact
+  const { mm, dd } = todayRocFull();
+  if (/年月日至月日/.test(text)) {
+    // 年月日至月日: only fill the 至月日 part
     return text.replace(/(?<!年)月日/g, `${mm}月${dd}日`);
   }
-  // No 至月日: replace 民國NNN年月日 with full date
-  return text.replace(/民國\d*年月日/g, `民國${roc}年${mm}月${dd}日`);
+  // 年月日 alone: fill month+day after the 年
+  return text.replace(/年月日/g, `年${mm}月${dd}日`);
 }
 
 let soapXrLabel = 'XR';
