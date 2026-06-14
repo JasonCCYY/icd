@@ -460,10 +460,9 @@ function todayRocFull() {
   return { roc, mm, dd };
 }
 function fillCertDate(text) {
-  const { roc, mm, dd } = todayRocFull();
-  return text
-    .replace(/民國\d*年月日/g, `民國${roc}年${mm}月${dd}日`)
-    .replace(/月日/g, `${mm}月${dd}日`);
+  const { mm, dd } = todayRocFull();
+  // Only replace 月日 NOT preceded by 年 (i.e. skip 民國NNN年月日)
+  return text.replace(/(?<!年)月日/g, `${mm}月${dd}日`);
 }
 
 let soapXrLabel = 'XR';
