@@ -710,7 +710,7 @@ async function renderCertTypes(sheet) {
     btn.addEventListener('click', () => {
       document.querySelectorAll('#cert-type-btns .soap-type-chip').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      renderCertPicker(data[type]);
+      renderCertPicker(data[type], type);
     });
     certTypeBtns.appendChild(btn);
   });
@@ -724,7 +724,7 @@ function certStripSuffix(s) {
   return s.replace(/\s*[（(]以下空白[）)]\s*$/, '');
 }
 
-function renderCertPicker(typeData) {
+function renderCertPicker(typeData, typeName) {
   certPicker.hidden = false;
   const numChips  = document.getElementById('cert-num-chips');
   const disSect   = certDisChips.closest('.soap-chip-section');
@@ -791,11 +791,12 @@ function renderCertPicker(typeData) {
     const chip = document.createElement('button');
     chip.className = 'soap-chip';
     chip.textContent = item;
+    const procText = typeName === '一般' ? fillCertDate(item) : item;
     addChipEvents(chip, () => {
-      certInsertProcess(fillCertDate(item));
+      certInsertProcess(procText);
       chip.classList.add('soap-chip-used');
       setTimeout(() => chip.classList.remove('soap-chip-used'), 600);
-    }, fillCertDate(item));
+    }, procText);
     certProcChips.appendChild(chip);
   });
 }
