@@ -495,24 +495,6 @@ body {
 #soap-picker {
   padding: 8px 16px 0;
 }
-#soap-date-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-#soap-date-btn {
-  background: #e8f5e9;
-  border: 1.5px solid #81c784;
-  color: #2e7d32;
-  border-radius: 16px;
-  padding: 5px 14px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-}
-#soap-date-btn:active { background: #c8e6c9; }
 
 .soap-chip-section {
   margin-bottom: 8px;

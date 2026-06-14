@@ -436,7 +436,6 @@ function addChipEvents(chip, onSingleClick, copyText) {
 const soapTabBtns   = document.querySelectorAll('.soap-tab-btn');
 const soapTypeBtns  = document.getElementById('soap-type-btns');
 const soapPicker    = document.getElementById('soap-picker');
-const soapDateBtn   = document.getElementById('soap-date-btn');
 const soapTextarea  = document.getElementById('soap-textarea');
 const soapCopyBtn   = document.getElementById('soap-copy-btn');
 const soapRestoreBtn= document.getElementById('soap-restore-btn');
@@ -514,12 +513,6 @@ function appendToLine(key, value) {
   soapTextarea.value = buildSoapText(lines);
 }
 
-// Date chip
-soapDateBtn.textContent = todayStr();
-soapDateBtn.addEventListener('click', () => {
-  soapDateBtn.textContent = todayStr();
-  appendToLine('S', todayStr());
-});
 
 // Load SOAP data
 async function fetchWithRetry(url, retries = 2, delay = 1500) {
