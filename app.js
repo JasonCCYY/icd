@@ -452,6 +452,18 @@ function todayStr() {
   const dd  = String(d.getDate()).padStart(2,'0');
   return `${roc}${mm}${dd}`;
 }
+function todayRocFull() {
+  const d = new Date();
+  const roc = d.getFullYear() - 1911;
+  const mm  = String(d.getMonth()+1).padStart(2,'0');
+  const dd  = String(d.getDate()).padStart(2,'0');
+  return { roc, mm, dd };
+}
+function fillCertDate(text) {
+  const { roc, mm, dd } = todayRocFull();
+  // Replace 民國NNN年月日 → 民國{roc}年{mm}月{dd}日
+  return text.replace(/民國\d*年月日/g, `民國${roc}年${mm}月${dd}日`);
+}
 
 let soapXrLabel = 'XR';
 
@@ -780,10 +792,10 @@ function renderCertPicker(typeData) {
     chip.className = 'soap-chip';
     chip.textContent = item;
     addChipEvents(chip, () => {
-      certInsertProcess(item);
+      certInsertProcess(fillCertDate(item));
       chip.classList.add('soap-chip-used');
       setTimeout(() => chip.classList.remove('soap-chip-used'), 600);
-    }, item);
+    }, fillCertDate(item));
     certProcChips.appendChild(chip);
   });
 }
