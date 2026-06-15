@@ -432,33 +432,31 @@ body {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ─── SOAP page ──────────────────────────────────────────────────────────── */
-#soap-top-tabs {
+/* Sub-tabs live in the header */
+.header-sub-tabs {
   display: flex;
-  gap: 8px;
-  padding: 12px 16px 6px;
-  position: sticky;
-  top: 0;
-  background: var(--bg);
-  z-index: 9;
+  gap: 6px;
+  flex: 1;
+  margin: 0 10px;
 }
 
 .soap-tab-btn {
   flex: 1;
-  padding: 9px;
-  border-radius: 10px;
-  border: 2px solid var(--border);
-  background: var(--card);
-  color: var(--text-sub);
-  font-size: 0.95rem;
+  padding: 7px;
+  border-radius: 8px;
+  border: 2px solid rgba(255,255,255,0.4);
+  background: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.8);
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
   transition: all 0.15s;
 }
 .soap-tab-btn.active {
-  border-color: var(--primary);
-  background: var(--primary);
-  color: #fff;
+  border-color: rgba(255,255,255,0.9);
+  background: rgba(255,255,255,0.9);
+  color: var(--primary);
 }
 
 #soap-type-area {
@@ -584,32 +582,23 @@ body {
 #soap-restore-btn:disabled { opacity: 0.4; cursor: default; }
 
 /* ─── 手術碼 page ─────────────────────────────────────────────────────────── */
-#ops-top-tabs {
-  display: flex;
-  gap: 8px;
-  padding: 12px 16px 6px;
-  position: sticky;
-  top: 0;
-  background: var(--bg);
-  z-index: 9;
-}
 .ops-tab-btn {
   flex: 1;
-  padding: 9px;
-  border-radius: 10px;
-  border: 2px solid var(--border);
-  background: var(--card);
-  color: var(--text-sub);
-  font-size: 0.95rem;
+  padding: 7px;
+  border-radius: 8px;
+  border: 2px solid rgba(255,255,255,0.4);
+  background: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.8);
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
   transition: all 0.15s;
 }
 .ops-tab-btn.active {
-  border-color: var(--primary);
-  background: var(--primary);
-  color: #fff;
+  border-color: rgba(255,255,255,0.9);
+  background: rgba(255,255,255,0.9);
+  color: var(--primary);
 }
 #ops-tab-notes { height: 100%; }
 #ops-search-area {
@@ -771,7 +760,6 @@ body {
 .ops-proc-empty { color: var(--border); font-size: 0.85rem; }
 
 /* ─── 診斷書 page (reuses SOAP styles via shared classes) ────────────────── */
-#cert-top-tabs  { display:flex; gap:8px; padding:12px 16px 6px; position:sticky; top:0; background:var(--bg); z-index:9; }
 #cert-type-area { padding:8px 16px 4px; }
 #cert-type-label{ font-size:0.75rem; color:var(--text-sub); margin-bottom:6px; }
 #cert-type-btns { display:flex; flex-wrap:wrap; gap:7px; }
@@ -813,5 +801,4 @@ body {
 /* ─── Desktop: smaller tab bar ───────────────────────────────────────────── */
 @media (pointer: fine) {
   :root { --tab-h: 42px; }
-  .soap-tab-btn, .ops-tab-btn { padding: 5px 9px; }
 }

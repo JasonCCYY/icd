@@ -33,6 +33,18 @@
     <!-- Header -->
     <header id="main-header">
       <h1 id="header-title">ICD-10 搜尋</h1>
+      <div id="soap-top-tabs" class="header-sub-tabs" hidden>
+        <button class="soap-tab-btn active" data-soap-sheet="SOAP中正">中正</button>
+        <button class="soap-tab-btn" data-soap-sheet="SOAP門診">門診</button>
+      </div>
+      <div id="cert-top-tabs" class="header-sub-tabs" hidden>
+        <button class="soap-tab-btn active" data-cert-sheet="診斷書中正">中正</button>
+        <button class="soap-tab-btn" data-cert-sheet="診斷書門診">門診</button>
+      </div>
+      <div id="ops-top-tabs" class="header-sub-tabs" hidden>
+        <button class="ops-tab-btn active" data-ops-tab="ops">手術碼</button>
+        <button class="ops-tab-btn" data-ops-tab="notes">備註</button>
+      </div>
       <button id="refresh-btn" aria-label="重新整理">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
       </button>
@@ -61,10 +73,6 @@
 
       <!-- SOAP page -->
       <div class="page" id="page-soap">
-        <div id="soap-top-tabs">
-          <button class="soap-tab-btn active" data-soap-sheet="SOAP中正">中正</button>
-          <button class="soap-tab-btn" data-soap-sheet="SOAP門診">門診</button>
-        </div>
         <div id="soap-type-area">
           <div id="soap-type-label">選擇類型</div>
           <div id="soap-type-btns"></div>
@@ -104,10 +112,6 @@
 
       <!-- 診斷書 page -->
       <div class="page" id="page-cert">
-        <div id="cert-top-tabs">
-          <button class="soap-tab-btn active" data-cert-sheet="診斷書中正">中正</button>
-          <button class="soap-tab-btn" data-cert-sheet="診斷書門診">門診</button>
-        </div>
         <div id="cert-type-area">
           <div id="cert-type-label">選擇類型</div>
           <div id="cert-type-btns"></div>
@@ -139,10 +143,6 @@
 
       <!-- 手術碼 page -->
       <div class="page" id="page-ops">
-        <div id="ops-top-tabs">
-          <button class="ops-tab-btn active" data-ops-tab="ops">手術碼</button>
-          <button class="ops-tab-btn" data-ops-tab="notes">備註</button>
-        </div>
         <div id="ops-tab-ops">
         <div id="ops-search-area">
           <div id="ops-input-wrap">

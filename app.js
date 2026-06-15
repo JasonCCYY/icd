@@ -218,6 +218,17 @@ async function doSearch(query) {
 }
 
 // ─── Tab navigation ───────────────────────────────────────────────────────────
+const headerSubTabsMap = { soap: 'soap-top-tabs', cert: 'cert-top-tabs', ops: 'ops-top-tabs' };
+
+function updateHeaderForPage(page) {
+  const hasSubTabs = page in headerSubTabsMap;
+  document.getElementById('header-title').hidden = hasSubTabs;
+  Object.values(headerSubTabsMap).forEach(id => {
+    document.getElementById(id).hidden = true;
+  });
+  if (hasSubTabs) document.getElementById(headerSubTabsMap[page]).hidden = false;
+}
+
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -225,6 +236,7 @@ document.querySelectorAll('.tab').forEach(btn => {
     btn.classList.add('active');
     document.getElementById(`page-${btn.dataset.page}`).classList.add('active');
     document.getElementById('header-title').textContent = btn.dataset.title;
+    updateHeaderForPage(btn.dataset.page);
   });
 });
 
