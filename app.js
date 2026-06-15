@@ -781,7 +781,11 @@ haMMDDInput.addEventListener('input', () => {
   let v = haMMDDInput.value.replace(/\D/g,'');
   if (v.length > 4) v = v.slice(0,4);
   haMMDDInput.value = v.length > 2 ? v.slice(0,2) + '.' + v.slice(2) : v;
-  calcHA();
+  if (v.length === 4) calcHA(); else {
+    document.getElementById('ha-display').textContent = '';
+    document.getElementById('ha-result-180').textContent = '';
+    document.getElementById('ha-week').innerHTML = '';
+  }
 });
 haYearInput.addEventListener('input', calcHA);
 haYearInput.value = todayRocFull().roc;
