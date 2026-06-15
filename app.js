@@ -659,19 +659,8 @@ async function renderSoapTypes(sheet) {
       document.querySelectorAll('.soap-type-chip').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const typeData = data[type];
-      // X光: copy XR items directly, no picker
-      if (type === 'X光') {
-        const xrItems = (typeData.XR || []).map(v => v.replace(/^A:\s*/, ''));
-        const text = xrItems.join('\n');
-        navigator.clipboard.writeText(text).catch(() => {});
-        showToast('已複製！');
-        soapLastVal = soapTextarea.value;
-        soapRestoreBtn.disabled = soapLastVal === '';
-        soapPicker.hidden = true;
-        return;
-      }
       soapXrLabel = (typeData.XR || []).some(v => v.startsWith('A:')) ? 'A' : 'XR';
-      renderSoapPicker(typeData);
+      renderSoapPicker(typeData, type === 'X光');
       const isSingle = ['S','PE','XR','P','dx'].every(k => (typeData[k]||[]).length <= 1);
       if (isSingle) {
         const xrVal = (typeData.XR?.[0] || '').replace(/^A:\s*/, '');
@@ -692,7 +681,7 @@ async function renderSoapTypes(sheet) {
 }
 
 // Render chips for selected type
-function renderSoapPicker(typeData) {
+function renderSoapPicker(typeData, isXrType = false) {
   soapPicker.hidden = false;
   const sections = [
     { id: 'soap-s-chips',  key: 'S',  line: 'S'  },
@@ -729,7 +718,13 @@ function renderSoapPicker(typeData) {
           lines.S = lines.S ? lines.S + ' ' + item : item;
           soapTextarea.value = buildSoapText(lines);
         } else if (line === 'XR') {
-          appendToLine('XR', item.startsWith('A: ') ? item.slice(3) : item);
+          const xrText = item.startsWith('A: ') ? item.slice(3) : item;
+          if (isXrType) {
+            navigator.clipboard.writeText(xrText).catch(() => {});
+            showToast('已複製！');
+          } else {
+            appendToLine('XR', xrText);
+          }
         } else {
           appendToLine(line, item);
         }
