@@ -931,7 +931,26 @@ async function renderCertTypes(sheet) {
       btn.classList.add('active');
       certTextarea.value = '';
       certRestoreBtn.disabled = true;
-      renderCertPicker(data[type], type);
+      const typeData = data[type];
+      const diseases  = typeData.disease  || [];
+      const processes = typeData.process  || [];
+      // Single-row type: auto-build and copy immediately
+      if (diseases.length <= 1 && processes.length <= 1 && diseases.length + processes.length > 0) {
+        const lines = [];
+        if (diseases.length === 1) lines.push(diseases[0] + '(以下空白)');
+        else lines.push('');
+        if (processes.length === 1) lines.push(fillCertDate(processes[0]));
+        const text = lines.join('\n');
+        certTextarea.value = text;
+        navigator.clipboard.writeText(text.trimStart()).catch(() => {});
+        showToast('已複製診斷書');
+        certLastVal = text;
+        certTextarea.value = '';
+        certRestoreBtn.disabled = false;
+        certPicker.hidden = true;
+        return;
+      }
+      renderCertPicker(typeData, type);
     });
     certTypeBtns.appendChild(btn);
   });
