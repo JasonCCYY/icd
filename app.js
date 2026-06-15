@@ -1022,9 +1022,16 @@ function certInsertProcess(item) {
   if (lines.length < 2) lines.push('');
   const proc = lines[1];
 
+  // Special case B: proc has 接受， and item contains 手術 → insert between 接受 and ，
+  if (proc.includes('接受，') && item.includes('手術')) {
+    lines[1] = proc.replace('接受，', `接受${item}，`);
+    certTextarea.value = lines.join('\n');
+    return;
+  }
+
   // Special case: proc has 出院， and item is a post-discharge modifier
   const isShuHou = item.includes('術後');
-  const isYi     = item.startsWith('宜') && item.endsWith('，');
+  const isYi     = item.startsWith('宜');
   if (proc.includes('出院，') && (isShuHou || isYi)) {
     const idx    = proc.indexOf('出院，') + '出院，'.length;
     const prefix = proc.slice(0, idx);
