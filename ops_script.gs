@@ -22,6 +22,19 @@ function doGet(e) {
     const header = values[0].map(h => String(h).trim());
     const rows   = values.slice(1);
 
+    // ── 備註 ────────────────────────────────────────────────────────────────
+    if (sheetName === '備註') {
+      const grouped = {};
+      rows.forEach(r => {
+        const type = String(r[0]||'').trim();
+        const text = String(r[1]||'').trim();
+        if (!type || !text) return;
+        if (!grouped[type]) grouped[type] = [];
+        grouped[type].push(text);
+      });
+      return output(grouped, 'ok');
+    }
+
     // ── 手術碼 ──────────────────────────────────────────────────────────────
     if (sheetName === '手術碼') {
       const data = rows

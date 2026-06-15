@@ -275,10 +275,80 @@ document.querySelectorAll('.ops-tab-btn').forEach(btn => {
     const tab = btn.dataset.opsTab;
     document.getElementById('ops-tab-ops').hidden   = tab !== 'ops';
     document.getElementById('ops-tab-notes').hidden = tab !== 'notes';
+    if (tab === 'notes') loadNotes();
   });
 });
 
 let opsData = null; // parsed rows
+
+// ─── 備註 tab ─────────────────────────────────────────────────────────────────
+let notesData = null;
+let notesLoaded = false;
+
+async function loadNotes() {
+  const typeBtns = document.getElementById('notes-type-btns');
+  const listEl   = document.getElementById('notes-list');
+  if (notesLoaded) return;
+  typeBtns.innerHTML = '<span style="color:#aaa;font-size:.85rem">載入中…</span>';
+  const cached = lsGet('notes');
+  if (cached) { notesData = cached; }
+  else {
+    const url = `${OPS_SCRIPT_URL}?token=${encodeURIComponent(OPS_TOKEN)}&sheet=${encodeURIComponent('備註')}`;
+    const data = await fetchWithRetry(url);
+    if (!data) {
+      typeBtns.innerHTML = '<span style="color:#d93025;font-size:.85rem">載入失敗</span>';
+      return;
+    }
+    notesData = data;
+    lsSet('notes', notesData);
+  }
+  notesLoaded = true;
+
+  // Render type buttons
+  typeBtns.innerHTML = '';
+  let activeType = null;
+  const types = Object.keys(notesData);
+
+  function showType(type) {
+    activeType = type;
+    typeBtns.querySelectorAll('.soap-type-chip').forEach(b =>
+      b.classList.toggle('active', b.textContent === type));
+    listEl.innerHTML = '';
+    (notesData[type] || []).forEach(text => {
+      const row = document.createElement('div');
+      row.className = 'notes-row';
+      row.textContent = text;
+      let timer = null;
+      row.addEventListener('click', () => {
+        if (timer) return;
+        timer = setTimeout(() => {
+          timer = null;
+          navigator.clipboard.writeText(text).catch(() => {});
+          showToast(`已複製`);
+          row.classList.add('notes-row-flash');
+          setTimeout(() => row.classList.remove('notes-row-flash'), 500);
+        }, 220);
+      });
+      row.addEventListener('dblclick', e => {
+        e.stopPropagation();
+        if (timer) { clearTimeout(timer); timer = null; }
+        navigator.clipboard.writeText(text).catch(() => {});
+        showToast(`已複製`);
+      });
+      listEl.appendChild(row);
+    });
+  }
+
+  types.forEach(type => {
+    const btn = document.createElement('button');
+    btn.className = 'soap-type-chip';
+    btn.textContent = type;
+    btn.addEventListener('click', () => showType(type));
+    typeBtns.appendChild(btn);
+  });
+
+  if (types.length) showType(types[0]);
+}
 
 // ─── localStorage cache (private device only) ─────────────────────────────
 const LS_TTL = 6 * 60 * 60 * 1000; // 6 hours
@@ -1001,11 +1071,12 @@ function prefetchAll() {
   loadSoapData('SOAP門診');
   loadCertData('診斷書中正');
   loadCertData('診斷書門診');
+  // notes loaded on demand
 }
 
 // ─── Refresh button ───────────────────────────────────────────────────────────
 document.getElementById('refresh-btn').addEventListener('click', () => {
-  ['ops','soap_SOAP中正','soap_SOAP門診','cert_診斷書中正','cert_診斷書門診'].forEach(k => {
+  ['ops','soap_SOAP中正','soap_SOAP門診','cert_診斷書中正','cert_診斷書門診','notes'].forEach(k => {
     try { localStorage.removeItem(k); } catch(e) {}
   });
   location.reload();

@@ -924,3 +924,29 @@ body {
 }
 
 .ha-monday-hi .ha-day-date { color: var(--primary); }
+
+/* ─── 備註 tab ───────────────────────────────────────────────────────────── */
+#notes-type-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 10px 16px 6px;
+}
+#notes-list {
+  padding: 4px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.notes-row {
+  padding: 10px 14px;
+  background: var(--card);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  font-size: 0.92rem;
+  color: var(--text);
+  cursor: pointer;
+  line-height: 1.5;
+  transition: background 0.15s;
+}
+.notes-row:active, .notes-row-flash { background: var(--accent); }
