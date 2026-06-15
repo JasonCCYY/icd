@@ -774,9 +774,21 @@ function calcHA() {
     cell.className = 'ha-day-cell';
     if (i === 0 && todayDow === 1) cell.classList.add('ha-monday-hi');
     cell.innerHTML = `<span class="ha-day-name">${WEEKDAY_NAMES[i]}</span><span class="ha-day-date">${wy}.${wm}.${wd}</span>`;
+    let haTimer = null;
     cell.addEventListener('click', () => {
-      navigator.clipboard.writeText(copyStr).catch(() => {});
-      showToast(`已複製：${copyStr}`);
+      if (haTimer) return;
+      haTimer = setTimeout(() => {
+        haTimer = null;
+        navigator.clipboard.writeText(copyStr).catch(() => {});
+        showToast(`已複製：${copyStr}`);
+      }, 220);
+    });
+    cell.addEventListener('dblclick', e => {
+      e.stopPropagation();
+      if (haTimer) { clearTimeout(haTimer); haTimer = null; }
+      const bilStr = `預Bil HA ${copyStr}`;
+      navigator.clipboard.writeText(bilStr).catch(() => {});
+      showToast(`已複製：${bilStr}`);
     });
     weekEl.appendChild(cell);
   }
