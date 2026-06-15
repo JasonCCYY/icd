@@ -222,12 +222,13 @@ const headerSubTabsMap = { soap: 'soap-top-tabs', cert: 'cert-top-tabs', ops: 'o
 
 function updateHeaderForPage(page) {
   const hasSubTabs = page in headerSubTabsMap;
-  document.getElementById('header-title').hidden = hasSubTabs;
+  document.getElementById('header-title').style.display = hasSubTabs ? 'none' : '';
   Object.values(headerSubTabsMap).forEach(id => {
-    document.getElementById(id).hidden = true;
+    document.getElementById(id).style.display = 'none';
   });
-  if (hasSubTabs) document.getElementById(headerSubTabsMap[page]).hidden = false;
+  if (hasSubTabs) document.getElementById(headerSubTabsMap[page]).style.display = 'flex';
 }
+updateHeaderForPage('icd'); // init: show title, hide all sub-tabs
 
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
