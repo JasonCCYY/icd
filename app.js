@@ -659,6 +659,17 @@ async function renderSoapTypes(sheet) {
       document.querySelectorAll('.soap-type-chip').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const typeData = data[type];
+      // X光: copy XR items directly, no picker
+      if (type === 'X光') {
+        const xrItems = (typeData.XR || []).map(v => v.replace(/^A:\s*/, ''));
+        const text = xrItems.join('\n');
+        navigator.clipboard.writeText(text).catch(() => {});
+        showToast('已複製！');
+        soapLastVal = soapTextarea.value;
+        soapRestoreBtn.disabled = soapLastVal === '';
+        soapPicker.hidden = true;
+        return;
+      }
       soapXrLabel = (typeData.XR || []).some(v => v.startsWith('A:')) ? 'A' : 'XR';
       renderSoapPicker(typeData);
       const isSingle = ['S','PE','XR','P','dx'].every(k => (typeData[k]||[]).length <= 1);
