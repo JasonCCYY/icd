@@ -813,4 +813,5 @@ body {
 /* ─── Desktop: smaller tab bar ───────────────────────────────────────────── */
 @media (pointer: fine) {
   :root { --tab-h: 42px; }
+  .soap-tab-btn, .ops-tab-btn { padding: 5px 9px; }
 }
