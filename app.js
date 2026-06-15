@@ -683,9 +683,108 @@ soapRestoreBtn.addEventListener('click', () => {
 // Load when SOAP tab is activated
 document.querySelectorAll('.tab').forEach(btn => {
   if (btn.dataset.page === 'soap') {
-    btn.addEventListener('click', () => renderSoapTypes(soapSheet), { once: false });
+    btn.addEventListener('click', () => {
+      if (!document.getElementById('soap-ha-content').hidden) return;
+      renderSoapTypes(soapSheet);
+    }, { once: false });
   }
 });
+
+// ─── HA Calculator ────────────────────────────────────────────────────────────
+const haContent   = document.getElementById('soap-ha-content');
+const haMainSoap  = document.getElementById('soap-main-content');
+const haYearInput = document.getElementById('ha-year');
+const haMMDDInput = document.getElementById('ha-mmdd');
+
+function haShowSoap() {
+  haContent.hidden  = true;
+  haMainSoap.hidden = false;
+}
+function haShowHA() {
+  haContent.hidden  = false;
+  haMainSoap.hidden = true;
+  haYearInput.value = haYearInput.value || todayRocFull().roc;
+}
+
+// HA button: deselects 中正/門診, shows HA panel
+document.getElementById('soap-ha-btn').addEventListener('click', () => {
+  soapTabBtns.forEach(b => b.classList.remove('active'));
+  document.getElementById('soap-ha-btn').classList.add('active');
+  haShowHA();
+});
+
+// 中正/門診 buttons restore SOAP main content
+soapTabBtns.forEach(btn => {
+  if (btn.dataset.soapSheet) {
+    btn.addEventListener('click', () => haShowSoap());
+  }
+});
+
+// Date calculation
+const ROC_WEEKDAYS = ['日','一','二','三','四','五','六'];
+const WEEKDAY_NAMES = ['週一','週二','週三','週四','週五'];
+
+function calcHA() {
+  const year = parseInt(haYearInput.value);
+  const raw  = haMMDDInput.value.replace('.','');
+  if (!year || raw.replace(/\D/g,'').length < 4) {
+    document.getElementById('ha-display').textContent = '';
+    document.getElementById('ha-result-180').textContent = '';
+    document.getElementById('ha-week').innerHTML = '';
+    return;
+  }
+  const mm = parseInt(raw.slice(0,2)) - 1;
+  const dd = parseInt(raw.slice(2,4));
+  const base = new Date(year + 1911, mm, dd);
+  if (isNaN(base.getTime())) return;
+
+  // Display entered date
+  const dispM = String(mm+1).padStart(2,'0');
+  const dispD = String(dd).padStart(2,'0');
+  document.getElementById('ha-display').textContent = `${year}.${dispM}.${dispD}`;
+
+  // 180 days later
+  const d180 = new Date(base);
+  d180.setDate(d180.getDate() + 180);
+  const r = todayRocFull();
+  const y180 = d180.getFullYear() - 1911;
+  const m180 = String(d180.getMonth()+1).padStart(2,'0');
+  const d180d = String(d180.getDate()).padStart(2,'0');
+  document.getElementById('ha-result-180').textContent =
+    `180天後：${y180}.${m180}.${d180d} (週${ROC_WEEKDAYS[d180.getDay()]})`;
+
+  // Find Monday on or after d180
+  const dow = d180.getDay(); // 0=Sun,1=Mon,...
+  const toMon = dow === 1 ? 0 : dow === 0 ? 1 : (8 - dow) % 7;
+  const monday = new Date(d180);
+  monday.setDate(monday.getDate() + toMon);
+
+  const todayDow = new Date().getDay(); // today's weekday for highlight
+
+  const weekEl = document.getElementById('ha-week');
+  weekEl.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const wy = d.getFullYear() - 1911;
+    const wm = String(d.getMonth()+1).padStart(2,'0');
+    const wd = String(d.getDate()).padStart(2,'0');
+    const cell = document.createElement('div');
+    cell.className = 'ha-day-cell';
+    if (i === 0 && todayDow === 1) cell.classList.add('ha-monday-hi');
+    cell.innerHTML = `<span class="ha-day-name">${WEEKDAY_NAMES[i]}</span><span class="ha-day-date">${wy}.${wm}.${wd}</span>`;
+    weekEl.appendChild(cell);
+  }
+}
+
+haMMDDInput.addEventListener('input', () => {
+  let v = haMMDDInput.value.replace(/\D/g,'');
+  if (v.length > 4) v = v.slice(0,4);
+  haMMDDInput.value = v.length > 2 ? v.slice(0,2) + '.' + v.slice(2) : v;
+  calcHA();
+});
+haYearInput.addEventListener('input', calcHA);
+haYearInput.value = todayRocFull().roc;
 
 // ─── 診斷書 page ──────────────────────────────────────────────────────────────
 const certTabBtns   = document.querySelectorAll('[data-cert-sheet]');

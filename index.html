@@ -36,6 +36,7 @@
       <div id="soap-top-tabs" class="header-sub-tabs" style="display:none">
         <button class="soap-tab-btn active" data-soap-sheet="SOAP中正">中正</button>
         <button class="soap-tab-btn" data-soap-sheet="SOAP門診">門診</button>
+        <button class="soap-tab-btn soap-tab-btn-ha" id="soap-ha-btn">HA</button>
       </div>
       <div id="cert-top-tabs" class="header-sub-tabs" style="display:none">
         <button class="soap-tab-btn active" data-cert-sheet="診斷書中正">中正</button>
@@ -73,6 +74,20 @@
 
       <!-- SOAP page -->
       <div class="page" id="page-soap">
+
+        <!-- HA calculator -->
+        <div id="soap-ha-content" hidden>
+          <div id="ha-input-row">
+            <input id="ha-year" type="number" min="100" max="999" />
+            <span class="ha-sep">.</span>
+            <input id="ha-mmdd" type="text" maxlength="5" placeholder="MMDD" autocomplete="off" inputmode="numeric" />
+          </div>
+          <div id="ha-display"></div>
+          <div id="ha-result-180"></div>
+          <div id="ha-week"></div>
+        </div>
+
+        <div id="soap-main-content">
         <div id="soap-type-area">
           <div id="soap-type-label">選擇類型</div>
           <div id="soap-type-btns"></div>
@@ -108,6 +123,7 @@
             <button id="soap-restore-btn" disabled>恢復</button>
           </div>
         </div>
+        </div><!-- /soap-main-content -->
       </div>
 
       <!-- 診斷書 page -->
