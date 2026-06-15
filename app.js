@@ -778,14 +778,21 @@ function calcHA() {
 }
 
 haMMDDInput.addEventListener('input', () => {
-  let v = haMMDDInput.value.replace(/\D/g,'');
-  if (v.length > 4) v = v.slice(0,4);
-  haMMDDInput.value = v.length > 2 ? v.slice(0,2) + '.' + v.slice(2) : v;
-  if (v.length === 4) calcHA(); else {
+  const v = haMMDDInput.value.replace(/\D/g,'').slice(0, 4);
+  haMMDDInput.value = v;
+  if (v.length === 4) calcHA();
+  else {
     document.getElementById('ha-display').textContent = '';
     document.getElementById('ha-result-180').textContent = '';
     document.getElementById('ha-week').innerHTML = '';
   }
+});
+haMMDDInput.addEventListener('blur', () => {
+  const v = haMMDDInput.value.replace(/\D/g,'');
+  if (v.length >= 2) haMMDDInput.value = v.slice(0,2) + (v.length > 2 ? '.' + v.slice(2) : '');
+});
+haMMDDInput.addEventListener('focus', () => {
+  haMMDDInput.value = haMMDDInput.value.replace(/\D/g,'');
 });
 haYearInput.addEventListener('input', calcHA);
 haYearInput.value = todayRocFull().roc;
