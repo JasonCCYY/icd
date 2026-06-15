@@ -929,6 +929,8 @@ async function renderCertTypes(sheet) {
     btn.addEventListener('click', () => {
       document.querySelectorAll('#cert-type-btns .soap-type-chip').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      certTextarea.value = '';
+      certRestoreBtn.disabled = true;
       renderCertPicker(data[type], type);
     });
     certTypeBtns.appendChild(btn);
