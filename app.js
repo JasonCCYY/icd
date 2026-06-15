@@ -655,12 +655,14 @@ function renderSoapPicker(typeData) {
   });
 }
 
-// Tab switch
+// Tab switch (中正/門診 only — HA handled separately)
 soapTabBtns.forEach(btn => {
+  if (!btn.dataset.soapSheet) return;
   btn.addEventListener('click', () => {
     soapTabBtns.forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     soapSheet = btn.dataset.soapSheet;
+    haShowSoap();
     renderSoapTypes(soapSheet);
   });
 });
@@ -680,11 +682,14 @@ soapRestoreBtn.addEventListener('click', () => {
   soapRestoreBtn.disabled = true;
 });
 
-// Load when SOAP tab is activated
+// Load when SOAP tab is activated (always reset HA, show main)
 document.querySelectorAll('.tab').forEach(btn => {
   if (btn.dataset.page === 'soap') {
     btn.addEventListener('click', () => {
-      if (!document.getElementById('soap-ha-content').hidden) return;
+      haShowSoap();
+      // restore active sheet button
+      soapTabBtns.forEach(b => b.classList.remove('active'));
+      document.querySelector(`.soap-tab-btn[data-soap-sheet="${soapSheet}"]`).classList.add('active');
       renderSoapTypes(soapSheet);
     }, { once: false });
   }
@@ -713,12 +718,7 @@ document.getElementById('soap-ha-btn').addEventListener('click', () => {
   haShowHA();
 });
 
-// 中正/門診 buttons restore SOAP main content
-soapTabBtns.forEach(btn => {
-  if (btn.dataset.soapSheet) {
-    btn.addEventListener('click', () => haShowSoap());
-  }
-});
+
 
 // Date calculation
 const ROC_WEEKDAYS = ['日','一','二','三','四','五','六'];
