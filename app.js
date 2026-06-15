@@ -1019,15 +1019,34 @@ function renderCertPicker(typeData, typeName) {
 
 function certInsertProcess(item) {
   const lines = certTextarea.value ? certTextarea.value.split('\n') : [''];
-  // Ensure at least 2 lines (line 0 = disease, line 1 = process)
   if (lines.length < 2) lines.push('');
   const proc = lines[1];
-  if (item.includes('接受治療')) {
+
+  // Special case: proc has 出院， and item is a post-discharge modifier
+  const isShuHou = item.includes('術後');
+  const isYi     = item.startsWith('宜') && item.endsWith('，');
+  if (proc.includes('出院，') && (isShuHou || isYi)) {
+    const idx    = proc.indexOf('出院，') + '出院，'.length;
+    const prefix = proc.slice(0, idx);
+    let suffix   = proc.slice(idx);
+    // Extract existing modifiers (ends with ，not 。) from suffix
+    let shuHou = '';
+    let yi     = '';
+    suffix = suffix.replace(/術後[^，]*，/, m => { shuHou = m; return ''; });
+    suffix = suffix.replace(/宜[^，。\n]+，/, m => { yi = m; return ''; });
+    if (isShuHou) shuHou = item;
+    else          yi     = item;
+    lines[1] = prefix + shuHou + yi + suffix;
+    certTextarea.value = lines.join('\n');
+    return;
+  }
+
+  if (item.includes('接受治療') || item.includes('接受手術')) {
     lines[1] = item; // main sentence: replace
   } else if (proc.includes('，建議')) {
     lines[1] = proc.replace('，建議', `，${item}，建議`);
-  } else if (proc.includes('接受治療，')) {
-    lines[1] = proc.replace('接受治療，', `接受治療，${item}，`);
+  } else if (proc.includes('接受治療，') || proc.includes('接受手術，')) {
+    lines[1] = proc.replace(/(接受(?:治療|手術)，)/, `$1${item}，`);
   } else {
     lines[1] = proc ? `${proc}\n${item}` : item;
   }
