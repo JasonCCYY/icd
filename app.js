@@ -202,8 +202,7 @@ function handleInput() {
   abbrHint.innerHTML = hint ? `${hint} <button id="g-search-btn">G搜尋</button>` : '';
   if (hint) {
     document.getElementById('g-search-btn').addEventListener('click', () => {
-      const q = encodeURIComponent(searchInput.value.trim() + ' icd10');
-      window.open(`https://www.google.com/search?q=${q}`, '_blank');
+      window.open(`https://www.google.com/search?q=${encodeURIComponent(query + ' icd10')}`, '_blank');
     });
   }
   clearTimeout(debounceTimer);
