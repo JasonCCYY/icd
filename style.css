@@ -298,7 +298,25 @@ body {
   min-height: 16px;
   padding: 0 4px;
   font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
+#g-search-btn {
+  font-style: normal;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border: 1.5px solid var(--primary);
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--primary);
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+#g-search-btn:active { background: #c5d7fb; }
 
 /* Abbr toggle */
 #abbr-wrap { margin: 4px 16px 6px; }

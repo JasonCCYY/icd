@@ -199,7 +199,13 @@ function handleInput() {
     hint = applied.length ? `搜索：${expanded}` : '';
   }
 
-  abbrHint.textContent = hint;
+  abbrHint.innerHTML = hint ? `${hint} <button id="g-search-btn">G搜尋</button>` : '';
+  if (hint) {
+    document.getElementById('g-search-btn').addEventListener('click', () => {
+      const q = encodeURIComponent(searchInput.value.trim() + ' icd10');
+      window.open(`https://www.google.com/search?q=${q}`, '_blank');
+    });
+  }
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => doSearch(query), 300);
 }
