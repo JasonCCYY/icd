@@ -890,8 +890,6 @@ function renderCertPicker(typeData, typeName) {
     chip.textContent = num;
     addChipEvents(chip, () => {
       const lines = certTextarea.value ? certTextarea.value.split('\n') : [''];
-      const line0 = lines[0];
-      if (line0 && !/[（(]以下空白[）)]/.test(line0)) lines.unshift('');
       const base = certStripSuffix(lines[0] || '');
       lines[0] = (base ? base + ' ' + num : num) + '(以下空白)';
       certTextarea.value = lines.join('\n');
@@ -912,9 +910,6 @@ function renderCertPicker(typeData, typeName) {
     chip.textContent = item;
     addChipEvents(chip, () => {
       const lines = certTextarea.value ? certTextarea.value.split('\n') : [''];
-      const line0 = lines[0];
-      const line0IsDisease = !line0 || /[（(]以下空白[）)]/.test(line0);
-      if (!line0IsDisease) lines.unshift('');
       let dis = certStripSuffix(lines[0] || '');
       const isInjury = /[傷折]/.test(item);
       if (isInjury) {
@@ -946,22 +941,20 @@ function renderCertPicker(typeData, typeName) {
 }
 
 function certInsertProcess(item) {
-  const text = certTextarea.value;
+  const lines = certTextarea.value ? certTextarea.value.split('\n') : [''];
+  // Ensure at least 2 lines (line 0 = disease, line 1 = process)
+  if (lines.length < 2) lines.push('');
+  const proc = lines[1];
   if (item.includes('接受治療')) {
-    // Main sentence: preserve disease line, replace process part
-    const firstLine = text.split('\n')[0] || '';
-    const isDisease = firstLine && !firstLine.includes('接受治療');
-    certTextarea.value = isDisease ? `${firstLine}\n${item}` : item;
-  } else if (text.includes('，建議')) {
-    // Insert item before "，建議"
-    certTextarea.value = text.replace('，建議', `，${item}，建議`);
-  } else if (text.includes('接受治療，')) {
-    // Insert after "接受治療，"
-    certTextarea.value = text.replace('接受治療，', `接受治療，${item}，`);
+    lines[1] = item; // main sentence: replace
+  } else if (proc.includes('，建議')) {
+    lines[1] = proc.replace('，建議', `，${item}，建議`);
+  } else if (proc.includes('接受治療，')) {
+    lines[1] = proc.replace('接受治療，', `接受治療，${item}，`);
   } else {
-    // No main sentence: append directly
-    certTextarea.value = text ? `${text}\n${item}` : item;
+    lines[1] = proc ? `${proc}\n${item}` : item;
   }
+  certTextarea.value = lines.join('\n');
 }
 
 certTabBtns.forEach(btn => {
@@ -974,10 +967,13 @@ certTabBtns.forEach(btn => {
 });
 
 certCopyBtn.addEventListener('click', () => {
-  const text = certTextarea.value;
+  const raw = certTextarea.value;
+  const lines = raw.split('\n');
+  if (lines[0] !== undefined && !lines[0].trim()) lines.shift();
+  const text = lines.join('\n');
   navigator.clipboard.writeText(text).catch(() => {});
   showToast('已複製診斷書');
-  certLastVal = text;
+  certLastVal = raw;
   certTextarea.value = '';
   certRestoreBtn.disabled = false;
 });
