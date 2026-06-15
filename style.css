@@ -878,6 +878,7 @@ body {
 .ha-day-cell {
   display: flex;
   justify-content: space-between;
+  cursor: pointer;
   align-items: center;
   padding: 8px 14px;
   background: var(--card);

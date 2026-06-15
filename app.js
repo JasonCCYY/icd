@@ -770,9 +770,14 @@ function calcHA() {
     const wm = String(d.getMonth()+1).padStart(2,'0');
     const wd = String(d.getDate()).padStart(2,'0');
     const cell = document.createElement('div');
+    const copyStr = `${wy}${wm}${wd}`;
     cell.className = 'ha-day-cell';
     if (i === 0 && todayDow === 1) cell.classList.add('ha-monday-hi');
     cell.innerHTML = `<span class="ha-day-name">${WEEKDAY_NAMES[i]}</span><span class="ha-day-date">${wy}.${wm}.${wd}</span>`;
+    cell.addEventListener('click', () => {
+      navigator.clipboard.writeText(copyStr).catch(() => {});
+      showToast(`已複製：${copyStr}`);
+    });
     weekEl.appendChild(cell);
   }
 }
