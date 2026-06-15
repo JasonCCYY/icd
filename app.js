@@ -1041,9 +1041,13 @@ function certInsertProcess(item) {
     let yi     = '';
     suffix = suffix.replace(/術後[^，]*，/, m => { shuHou = m; return ''; });
     suffix = suffix.replace(/宜[^，。\n]+，/, m => { yi = m; return ''; });
-    if (isShuHou) shuHou = item;
-    else          yi     = item;
-    lines[1] = prefix + shuHou + yi + suffix;
+    const addComma = s => s && !s.endsWith('，') ? s + '，' : s;
+    if (isShuHou) shuHou = addComma(item);
+    else          yi     = addComma(item);
+    let newProc = prefix + shuHou + yi + suffix;
+    // If chip contains 及門診追蹤治療 and suffix has 宜門診追蹤治療。, merge into 及門診追蹤治療。
+    newProc = newProc.replace(/及門診追蹤治療，宜門診追蹤治療。/g, '及門診追蹤治療。');
+    lines[1] = newProc;
     certTextarea.value = lines.join('\n');
     return;
   }
