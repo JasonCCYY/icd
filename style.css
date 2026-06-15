@@ -809,3 +809,8 @@ body {
   padding: 40px 20px;
   font-size: 0.95rem;
 }
+
+/* ─── Desktop: smaller tab bar ───────────────────────────────────────────── */
+@media (pointer: fine) {
+  :root { --tab-h: 52px; }
+}
