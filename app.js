@@ -1007,7 +1007,7 @@ function renderCertPicker(typeData, typeName) {
     const chip = document.createElement('button');
     chip.className = 'soap-chip';
     chip.textContent = item;
-    const procText = typeName === '一般' ? fillCertDate(item) : item;
+    const procText = fillCertDate(item);
     addChipEvents(chip, () => {
       certInsertProcess(procText);
       chip.classList.add('soap-chip-used');
