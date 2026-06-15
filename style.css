@@ -812,6 +812,7 @@ body {
   flex-direction: column;
   gap: 16px;
 }
+#soap-ha-content[hidden] { display: none !important; }
 
 #ha-input-row {
   display: flex;
