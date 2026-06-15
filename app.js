@@ -976,12 +976,7 @@ function renderCertPicker(typeData, typeName) {
     numChips.appendChild(chip);
   });
 
-  // Sort: non-injury chips first, injury/fracture chips last
-  const sorted = [...diseases].sort((a, b) => {
-    return (/[傷折]/.test(a) ? 1 : 0) - (/[傷折]/.test(b) ? 1 : 0);
-  });
-
-  sorted.forEach(item => {
+  diseases.forEach(item => {
     const chip = document.createElement('button');
     chip.className = 'soap-chip';
     chip.textContent = item;
