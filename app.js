@@ -233,7 +233,7 @@ function updateHeaderForPage(page) {
   });
   if (hasSubTabs) document.getElementById(headerSubTabsMap[page]).style.display = 'flex';
 }
-updateHeaderForPage('icd'); // init: show title, hide all sub-tabs
+// updateHeaderForPage called at end of file after all listeners are registered
 
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -1133,6 +1133,9 @@ document.getElementById('refresh-btn').addEventListener('click', () => {
   });
   location.reload();
 });
+
+// Default to SOAP page on load
+document.querySelector('.tab[data-page="soap"]').click();
 
 // ─── Service worker ───────────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) {
