@@ -702,8 +702,9 @@ function renderSoapPicker(typeData, isXrType = false) {
       chip.textContent = item;
       addChipEvents(chip, () => {
         if (line === '__dx__') {
+          const dxText = item.replace(/[（(][^）)]*[）)]\s*/g, '').trim();
           const cur = soapTextarea.value.trimEnd();
-          soapTextarea.value = cur ? `${cur}\n${item}` : item;
+          soapTextarea.value = cur ? `${cur}\n${dxText}` : dxText;
         } else if (line === 'S' && /^(Lt|Rt)$/i.test(item)) {
           const lines = soapLines();
           const s = lines.S;
@@ -730,7 +731,7 @@ function renderSoapPicker(typeData, isXrType = false) {
         }
         chip.classList.add('soap-chip-used');
         setTimeout(() => chip.classList.remove('soap-chip-used'), 600);
-      }, item);
+      }, line === '__dx__' ? item.replace(/[（(][^）)]*[）)]\s*/g, '').trim() : item);
       container.appendChild(chip);
     });
   });
