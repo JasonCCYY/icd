@@ -932,6 +932,11 @@ body {
   gap: 8px;
   padding: 12px 16px;
 }
+#edu-btns .soap-type-chip {
+  padding: 3px 8px;
+  font-size: 0.78rem;
+  border-radius: 14px;
+}
 
 /* ─── 備註 tab ───────────────────────────────────────────────────────────── */
 #notes-type-btns {
