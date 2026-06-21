@@ -702,7 +702,7 @@ function renderSoapPicker(typeData, isXrType = false) {
       chip.textContent = item;
       addChipEvents(chip, () => {
         if (line === '__dx__') {
-          const dxText = item.replace(/[（(][^）)]*[）)]\s*/g, '').trim();
+          const dxText = item.includes(' / ') ? item : item.replace(/[（(][^）)]*[）)]\s*/g, '').trim();
           const cur = soapTextarea.value.trimEnd();
           soapTextarea.value = cur ? `${cur}\n${dxText}` : dxText;
         } else if (line === 'S' && /^(Lt|Rt)$/i.test(item)) {
@@ -731,7 +731,7 @@ function renderSoapPicker(typeData, isXrType = false) {
         }
         chip.classList.add('soap-chip-used');
         setTimeout(() => chip.classList.remove('soap-chip-used'), 600);
-      }, line === '__dx__' ? item.replace(/[（(][^）)]*[）)]\s*/g, '').trim() : item);
+      }, line === '__dx__' ? (item.includes(' / ') ? item : item.replace(/[（(][^）)]*[）)]\s*/g, '').trim()) : item);
       container.appendChild(chip);
     });
   });
