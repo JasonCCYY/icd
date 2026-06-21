@@ -925,6 +925,14 @@ body {
 
 .ha-monday-hi .ha-day-date { color: var(--primary); }
 
+/* ─── 衛教 tab ───────────────────────────────────────────────────────────── */
+#edu-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+}
+
 /* ─── 備註 tab ───────────────────────────────────────────────────────────── */
 #notes-type-btns {
   display: flex;

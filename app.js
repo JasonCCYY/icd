@@ -275,7 +275,9 @@ document.querySelectorAll('.ops-tab-btn').forEach(btn => {
     const tab = btn.dataset.opsTab;
     document.getElementById('ops-tab-ops').hidden   = tab !== 'ops';
     document.getElementById('ops-tab-notes').hidden = tab !== 'notes';
+    document.getElementById('ops-tab-edu').hidden   = tab !== 'edu';
     if (tab === 'notes') loadNotes();
+    if (tab === 'edu')   loadEdu();
   });
 });
 
@@ -1117,6 +1119,39 @@ document.querySelectorAll('.tab').forEach(btn => {
   }
 });
 
+// ─── 衛教 tab ─────────────────────────────────────────────────────────────────
+const EDU_PRES_ID = '1M2-ZfIjzO0mXN2nePp99eWvPHYpaTX1TFthmtVwh0Ms';
+let eduLoaded = false;
+
+async function loadEdu() {
+  const container = document.getElementById('edu-btns');
+  if (eduLoaded) return;
+  container.innerHTML = '<span style="color:#aaa;font-size:.85rem">載入中…</span>';
+  const cached = lsGet('edu');
+  let data = cached;
+  if (!data) {
+    const url = `${OPS_SCRIPT_URL}?token=${encodeURIComponent(OPS_TOKEN)}&sheet=${encodeURIComponent('衛教')}`;
+    data = await fetchWithRetry(url);
+    if (!data) {
+      container.innerHTML = '<span style="color:#d93025;font-size:.85rem">載入失敗</span>';
+      return;
+    }
+    lsSet('edu', data);
+  }
+  eduLoaded = true;
+  container.innerHTML = '';
+  data.forEach(({ name, slideId }) => {
+    const btn = document.createElement('button');
+    btn.className = 'soap-type-chip';
+    btn.textContent = name;
+    btn.addEventListener('click', () => {
+      const url = `https://docs.google.com/presentation/d/${EDU_PRES_ID}/preview#slide=${slideId}`;
+      window.open(url, '_blank');
+    });
+    container.appendChild(btn);
+  });
+}
+
 // ─── Pre-fetch all sheet data on unlock ──────────────────────────────────────
 function prefetchAll() {
   loadOpsData();
@@ -1129,7 +1164,7 @@ function prefetchAll() {
 
 // ─── Refresh button ───────────────────────────────────────────────────────────
 document.getElementById('refresh-btn').addEventListener('click', () => {
-  ['ops','soap_SOAP中正','soap_SOAP門診','cert_診斷書中正','cert_診斷書門診','notes'].forEach(k => {
+  ['ops','soap_SOAP中正','soap_SOAP門診','cert_診斷書中正','cert_診斷書門診','notes','edu'].forEach(k => {
     try { localStorage.removeItem(k); } catch(e) {}
   });
   location.reload();

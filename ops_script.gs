@@ -22,6 +22,17 @@ function doGet(e) {
     const header = values[0].map(h => String(h).trim());
     const rows   = values.slice(1);
 
+    // ── 衛教 ────────────────────────────────────────────────────────────────
+    if (sheetName === '衛教') {
+      const data = rows
+        .map(r => ({
+          name: String(r[0]||'').trim(),
+          slideId: String(r[1]||'').trim(),
+        }))
+        .filter(r => r.name && r.slideId);
+      return output(data, 'ok');
+    }
+
     // ── 備註 ────────────────────────────────────────────────────────────────
     if (sheetName === '備註') {
       const grouped = {};
