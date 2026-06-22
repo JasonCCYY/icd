@@ -28,6 +28,7 @@ function doGet(e) {
         .map(r => ({
           name: String(r[0]||'').trim(),
           slideId: String(r[1]||'').trim(),
+          category: String(r[2]||'').trim(),
         }))
         .filter(r => r.name && r.slideId);
       return output(data, 'ok');

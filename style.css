@@ -937,6 +937,19 @@ body {
   font-size: 0.78rem;
   border-radius: 14px;
 }
+.edu-cat-label {
+  width: 100%;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary);
+  margin: 6px 0 2px;
+}
+.edu-cat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+}
 
 /* ─── 備註 tab ───────────────────────────────────────────────────────────── */
 #notes-type-btns {

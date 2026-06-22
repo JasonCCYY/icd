@@ -1140,15 +1140,35 @@ async function loadEdu() {
   }
   eduLoaded = true;
   container.innerHTML = '';
-  data.forEach(({ name, slideId }) => {
-    const btn = document.createElement('button');
-    btn.className = 'soap-type-chip';
-    btn.textContent = name;
-    btn.addEventListener('click', () => {
-      const url = `https://docs.google.com/presentation/d/${EDU_PRES_ID}/preview#slide=${slideId}`;
-      window.open(url, '_blank');
+
+  // Group by category, preserving order of first appearance
+  const catOrder = [];
+  const catMap = {};
+  data.forEach(item => {
+    const cat = item.category || '其他';
+    if (!catMap[cat]) { catMap[cat] = []; catOrder.push(cat); }
+    catMap[cat].push(item);
+  });
+
+  catOrder.forEach(cat => {
+    const label = document.createElement('div');
+    label.className = 'edu-cat-label';
+    label.textContent = cat;
+    container.appendChild(label);
+
+    const row = document.createElement('div');
+    row.className = 'edu-cat-row';
+    catMap[cat].forEach(({ name, slideId }) => {
+      const btn = document.createElement('button');
+      btn.className = 'soap-type-chip';
+      btn.textContent = name;
+      btn.addEventListener('click', () => {
+        const url = `https://docs.google.com/presentation/d/${EDU_PRES_ID}/preview#slide=${slideId}`;
+        window.open(url, '_blank');
+      });
+      row.appendChild(btn);
     });
-    container.appendChild(btn);
+    container.appendChild(row);
   });
 }
 
