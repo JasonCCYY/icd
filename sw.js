@@ -1,4 +1,4 @@
-const CACHE = 'icd10-v82';
+const CACHE = 'icd10-v83';
 const ASSETS = ['/', '/index.html', '/style.css', '/app.js', '/manifest.json', '/zh.json'];
 
 self.addEventListener('install', e => {
