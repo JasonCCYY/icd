@@ -1118,7 +1118,7 @@ document.querySelectorAll('.tab').forEach(btn => {
 });
 
 // ─── 衛教：雙擊 SOAP 分頁按鈕開啟簡報第一頁 ──────────────────────────────────
-const EDU_PRES_URL = 'https://docs.google.com/presentation/d/1M2-ZfIjzO0mXN2nePp99eWvPHYpaTX1TFthmtVwh0Ms/preview#slide=id.p';
+const EDU_PRES_URL = 'https://docs.google.com/presentation/d/1M2-ZfIjzO0mXN2nePp99eWvPHYpaTX1TFthmtVwh0Ms/preview#slide=id.g3f2647bc135_0_279';
 document.querySelectorAll('.tab[data-page="soap"]').forEach(btn => {
   btn.addEventListener('dblclick', () => {
     window.open(EDU_PRES_URL, '_blank');
