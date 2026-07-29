@@ -533,6 +533,9 @@ body {
   width: 100%;
   height: 0;
 }
+.soap-chip[data-sep="1"] {
+  display: none;
+}
 .soap-chip {
   padding: 5px 12px;
   border-radius: 14px;

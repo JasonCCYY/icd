@@ -698,7 +698,7 @@ function renderSoapPicker(typeData, isXrType = false) {
     section.hidden = items.length === 0;
     items.forEach(item => {
       // Line-break separator
-      if (item === '---') {
+      if (item.trim() === '---') {
         const br = document.createElement('div');
         br.className = 'chip-row-break';
         container.appendChild(br);
@@ -707,6 +707,7 @@ function renderSoapPicker(typeData, isXrType = false) {
       const chip = document.createElement('button');
       chip.className = 'soap-chip';
       chip.textContent = item;
+      if (item.trim() === '---') { chip.dataset.sep = '1'; }
       addChipEvents(chip, () => {
         if (line === '__dx__') {
           const dxText = item.includes(' / ') ? item : item.replace(/[（(][^）)]*[）)]\s*/g, '').trim();
