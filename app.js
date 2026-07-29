@@ -697,6 +697,13 @@ function renderSoapPicker(typeData, isXrType = false) {
     container.innerHTML = '';
     section.hidden = items.length === 0;
     items.forEach(item => {
+      // Line-break separator
+      if (item === '---') {
+        const br = document.createElement('div');
+        br.className = 'chip-row-break';
+        container.appendChild(br);
+        return;
+      }
       const chip = document.createElement('button');
       chip.className = 'soap-chip';
       chip.textContent = item;
