@@ -798,6 +798,7 @@ document.getElementById('soap-ha-btn').addEventListener('click', () => {
   soapTabBtns.forEach(b => b.classList.remove('active'));
   document.getElementById('soap-ha-btn').classList.add('active');
   haShowHA();
+  loadPt();
 });
 
 
@@ -1117,13 +1118,99 @@ document.querySelectorAll('.tab').forEach(btn => {
   }
 });
 
-// ─── 衛教：雙擊 SOAP 分頁按鈕開啟簡報第一頁 ──────────────────────────────────
-const EDU_PRES_URL = 'https://docs.google.com/presentation/d/1M2-ZfIjzO0mXN2nePp99eWvPHYpaTX1TFthmtVwh0Ms/preview#slide=id.g3f2647bc135_0_279';
-document.querySelectorAll('.tab[data-page="soap"]').forEach(btn => {
-  btn.addEventListener('dblclick', () => {
-    window.open(EDU_PRES_URL, '_blank');
+// ─── 復健 PT ──────────────────────────────────────────────────────────────────
+let ptData = null;
+let ptLoaded = false;
+let ptActiveCat = null;
+let ptActiveName = null;
+
+async function loadPt() {
+  if (ptLoaded) { renderPtCats(); return; }
+  const catBtns = document.getElementById('pt-cat-btns');
+  catBtns.innerHTML = '<span style="color:#aaa;font-size:.85rem">載入中…</span>';
+  const cached = lsGet('pt');
+  if (cached) { ptData = cached; }
+  else {
+    const url = `${OPS_SCRIPT_URL}?token=${encodeURIComponent(OPS_TOKEN)}&sheet=${encodeURIComponent('復健')}`;
+    const data = await fetchWithRetry(url);
+    if (!data) {
+      catBtns.innerHTML = '<span style="color:#d93025;font-size:.85rem">載入失敗</span>';
+      return;
+    }
+    ptData = data;
+    lsSet('pt', ptData);
+  }
+  ptLoaded = true;
+  renderPtCats();
+}
+
+function renderPtCats() {
+  const catBtns = document.getElementById('pt-cat-btns');
+  catBtns.innerHTML = '';
+  Object.keys(ptData).forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'pt-cat-btn' + (cat === ptActiveCat ? ' active' : '');
+    btn.textContent = cat;
+    btn.addEventListener('click', () => {
+      ptActiveCat = cat;
+      ptActiveName = null;
+      document.querySelectorAll('.pt-cat-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderPtDiseases(cat);
+    });
+    catBtns.appendChild(btn);
   });
-});
+  if (ptActiveCat && ptData[ptActiveCat]) renderPtDiseases(ptActiveCat);
+  else document.getElementById('pt-disease-btns').innerHTML = '';
+}
+
+function renderPtDiseases(cat) {
+  const disEl = document.getElementById('pt-disease-btns');
+  const itemsEl = document.getElementById('pt-items');
+  disEl.innerHTML = '';
+  itemsEl.innerHTML = '';
+  (ptData[cat] || []).forEach(({ name, items }) => {
+    const btn = document.createElement('button');
+    btn.className = 'pt-dis-btn' + (name === ptActiveName ? ' active' : '');
+    btn.textContent = name;
+    btn.addEventListener('click', () => {
+      ptActiveName = name;
+      document.querySelectorAll('.pt-dis-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderPtItems(items);
+    });
+    disEl.appendChild(btn);
+    if (name === ptActiveName) renderPtItems(items);
+  });
+}
+
+function renderPtItems(items) {
+  const el = document.getElementById('pt-items');
+  el.innerHTML = '';
+  items.forEach(text => {
+    const row = document.createElement('div');
+    row.className = 'pt-item-row';
+    row.textContent = text;
+    let timer = null;
+    row.addEventListener('click', () => {
+      if (timer) return;
+      timer = setTimeout(() => {
+        timer = null;
+        navigator.clipboard.writeText(text).catch(() => {});
+        showToast('已複製');
+        row.classList.add('notes-row-flash');
+        setTimeout(() => row.classList.remove('notes-row-flash'), 500);
+      }, 220);
+    });
+    row.addEventListener('dblclick', e => {
+      e.stopPropagation();
+      if (timer) { clearTimeout(timer); timer = null; }
+      navigator.clipboard.writeText(text).catch(() => {});
+      showToast('已複製');
+    });
+    el.appendChild(row);
+  });
+}
 
 // ─── Pre-fetch all sheet data on unlock ──────────────────────────────────────
 function prefetchAll() {
@@ -1137,7 +1224,7 @@ function prefetchAll() {
 
 // ─── Refresh button ───────────────────────────────────────────────────────────
 document.getElementById('refresh-btn').addEventListener('click', () => {
-  ['ops','soap_SOAP中正','soap_SOAP門診','cert_診斷書中正','cert_診斷書門診','notes'].forEach(k => {
+  ['ops','soap_SOAP中正','soap_SOAP門診','cert_診斷書中正','cert_診斷書門診','notes','pt'].forEach(k => {
     try { localStorage.removeItem(k); } catch(e) {}
   });
   location.reload();

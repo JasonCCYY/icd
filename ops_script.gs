@@ -22,16 +22,18 @@ function doGet(e) {
     const header = values[0].map(h => String(h).trim());
     const rows   = values.slice(1);
 
-    // ── 衛教 ────────────────────────────────────────────────────────────────
-    if (sheetName === '衛教') {
-      const data = rows
-        .map(r => ({
-          name: String(r[0]||'').trim(),
-          slideId: String(r[1]||'').trim(),
-          category: String(r[2]||'').trim(),
-        }))
-        .filter(r => r.name && r.slideId);
-      return output(data, 'ok');
+    // ── 復健 ────────────────────────────────────────────────────────────────
+    if (sheetName === '復健') {
+      const grouped = {};
+      rows.forEach(r => {
+        const cat  = String(r[0]||'').trim();
+        const name = String(r[1]||'').trim();
+        if (!cat || !name) return;
+        const items = r.slice(2).map(v => String(v||'').trim()).filter(v => v);
+        if (!grouped[cat]) grouped[cat] = [];
+        grouped[cat].push({ name, items });
+      });
+      return output(grouped, 'ok');
     }
 
     // ── 備註 ────────────────────────────────────────────────────────────────
