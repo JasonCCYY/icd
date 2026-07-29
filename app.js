@@ -1216,18 +1216,24 @@ function renderPtItems(items) {
 const EDU_PRES_URL = 'https://docs.google.com/presentation/d/1M2-ZfIjzO0mXN2nePp99eWvPHYpaTX1TFthmtVwh0Ms/preview#slide=id.g3f2647bc135_0_279';
 (function() {
   let lastTap = 0;
+  let opening = false;
   document.querySelectorAll('.tab[data-page="soap"]').forEach(btn => {
     btn.addEventListener('click', () => {
       const now = Date.now();
-      if (now - lastTap < 350) {
-        window.open(EDU_PRES_URL, '_blank');
+      if (now - lastTap < 400 && !opening) {
+        opening = true;
+        const a = document.createElement('a');
+        a.href = EDU_PRES_URL;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
         lastTap = 0;
+        setTimeout(() => { opening = false; }, 500);
       } else {
         lastTap = now;
       }
-    });
-    btn.addEventListener('dblclick', () => {
-      window.open(EDU_PRES_URL, '_blank');
     });
   });
 })();
