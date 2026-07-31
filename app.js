@@ -724,7 +724,13 @@ function renderSoapPicker(typeData, isXrType = false) {
           soapTextarea.value = buildSoapText(lines);
         } else if (line === 'S') {
           const lines = soapLines();
-          lines.S = lines.S ? lines.S + ' ' + item : item;
+          // all-lowercase single word = body part → insert right after Lt/Rt/Both
+          const isBodyPart = /^[a-z]+$/.test(item.trim());
+          if (isBodyPart && /\b(Lt|Rt|Both)\b/.test(lines.S)) {
+            lines.S = lines.S.replace(/\b(Lt|Rt|Both)\b/, `$1 ${item}`);
+          } else {
+            lines.S = lines.S ? lines.S + ' ' + item : item;
+          }
           soapTextarea.value = buildSoapText(lines);
         } else if (line === 'XR') {
           const xrText = item.startsWith('A: ') ? item.slice(3) : item;
