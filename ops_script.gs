@@ -97,10 +97,13 @@ function doGet(e) {
       add(grouped[type].dx, r[5]);
     });
 
-    // Deduplicate
+    // Deduplicate (preserve all '---' separators)
     Object.values(grouped).forEach(g => {
       ['S','PE','XR','P','dx'].forEach(k => {
-        g[k] = [...new Set(g[k])];
+        g[k] = g[k].reduce((acc, v) => {
+          if (v === '---' || !acc.includes(v)) acc.push(v);
+          return acc;
+        }, []);
       });
     });
 
