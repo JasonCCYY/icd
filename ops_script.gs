@@ -83,27 +83,58 @@ function doGet(e) {
     }
 
     // ── SOAP 分頁（中正 / 門診）─────────────────────────────────────────────
-    // Columns: 類型(0) S(1) PE(2) XR(3) P(4) 診斷碼(5)
-    const grouped = {};
+    // Header-driven: supports multiple columns with same name (e.g. two 診斷碼 cols)
+    const COL_KEY = { 'S':'S', 'PE':'PE', 'XR':'XR', 'P':'P', '診斷碼':'dx' };
+
+    // Build column groups: key -> [ [colIdx, ...], ... ] grouped by consecutive same-name spans
+    const colGroups = {}; // key -> array of column-index arrays (one sub-array per group)
+    header.forEach((h, i) => {
+      if (i === 0) return;
+      const key = COL_KEY[h];
+      if (!key) return;
+      if (!colGroups[key]) colGroups[key] = [[]];
+      // New group when the previous column had a different header
+      else if (header[i - 1] !== h) colGroups[key].push([]);
+      colGroups[key][colGroups[key].length - 1].push(i);
+    });
+
+    // Collect per type, per key, per column-group
+    const raw = {}; // type -> key -> [ [values in group0], [values in group1], ... ]
     rows.forEach(r => {
       const type = String(r[0]||'').trim();
       if (!type) return;
-      if (!grouped[type]) grouped[type] = { S:[], PE:[], XR:[], P:[], dx:[] };
-      const add = (arr, val) => { const v = String(val||'').trim(); if (v) arr.push(v); };
-      add(grouped[type].S,  r[1]);
-      add(grouped[type].PE, r[2]);
-      add(grouped[type].XR, r[3]);
-      add(grouped[type].P,  r[4]);
-      add(grouped[type].dx, r[5]);
+      if (!raw[type]) {
+        raw[type] = {};
+        Object.values(COL_KEY).forEach(k => { raw[type][k] = (colGroups[k]||[[]]).map(() => []); });
+      }
+      Object.entries(colGroups).forEach(([key, groups]) => {
+        groups.forEach((cols, gIdx) => {
+          cols.forEach(ci => {
+            const v = String(r[ci]||'').trim();
+            if (v) raw[type][key][gIdx].push(v);
+          });
+        });
+      });
     });
 
-    // Deduplicate (preserve all '---' separators)
-    Object.values(grouped).forEach(g => {
-      ['S','PE','XR','P','dx'].forEach(k => {
-        g[k] = g[k].reduce((acc, v) => {
-          if (v === '---' || !acc.includes(v)) acc.push(v);
-          return acc;
-        }, []);
+    // Deduplicate within each group (preserve all '---'), then join groups with '---'
+    const dedup = arr => arr.reduce((acc, v) => {
+      if (v === '---' || !acc.includes(v)) acc.push(v);
+      return acc;
+    }, []);
+
+    const grouped = {};
+    Object.entries(raw).forEach(([type, sections]) => {
+      grouped[type] = {};
+      Object.entries(sections).forEach(([key, groups]) => {
+        const flat = [];
+        groups.forEach((g, i) => {
+          const d = dedup(g);
+          if (d.length === 0) return;
+          if (flat.length > 0) flat.push('---');
+          flat.push(...d);
+        });
+        grouped[type][key] = flat;
       });
     });
 
