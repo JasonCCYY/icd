@@ -773,7 +773,9 @@ soapCopyBtn.addEventListener('click', () => {
   navigator.clipboard.writeText(filterSoapText(text)).catch(() => {});
   showToast('已複製 SOAP');
   soapLastVal = text;
-  soapTextarea.value = soapDefaultText('');
+  const activeType = document.querySelector('.soap-type-chip.active')?.textContent || '';
+  soapTextarea.value = soapDefaultText(activeType);
+  document.querySelectorAll('#soap-chips-area .soap-chip').forEach(c => c.classList.remove('soap-chip-used'));
   soapRestoreBtn.disabled = false;
 });
 
