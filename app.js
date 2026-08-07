@@ -724,10 +724,14 @@ function renderSoapPicker(typeData, isXrType = false) {
           soapTextarea.value = buildSoapText(lines);
         } else if (line === 'S') {
           const lines = soapLines();
-          // all-lowercase single word = body part → insert right after Lt/Rt/Both
-          const isBodyPart = /^[a-z]+$/.test(item.trim());
-          if (isBodyPart && /\b(Lt|Rt|Both)\b/.test(lines.S)) {
+          const BODY_PARTS = new Set(['hip','knee','shoulder','elbow','wrist','ankle','foot','hand','chest','finger','thumb','toe','back','neck','spine','arm','leg','thigh','calf','heel']);
+          const isBodyPart = BODY_PARTS.has(item.trim().toLowerCase());
+          const hasLtRt = /\b(Lt|Rt|Both)\b/.test(lines.S);
+          const hasAfter = /\bafter\b/.test(lines.S);
+          if (isBodyPart && hasLtRt) {
             lines.S = lines.S.replace(/\b(Lt|Rt|Both)\b/, `$1 ${item}`);
+          } else if (!isBodyPart && hasAfter) {
+            lines.S = lines.S.replace(/\bafter\b/, `after ${item}`);
           } else {
             lines.S = lines.S ? lines.S + ' ' + item : item;
           }
