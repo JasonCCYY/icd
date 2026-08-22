@@ -760,7 +760,7 @@ function renderSoapPicker(typeData, isXrType = false) {
           const lines = soapLines();
           // Remove any existing Lt/Rt/Both before inserting the new one
           const s = lines.S.replace(/\s*\b(Lt|Rt|Both)\b\s*/gi, ' ').trim();
-          const BP_RE = /\b(hip|knee|shoulder|elbow|eblow|wrist|ankle|foot|hand|chest|finger|thumb|toe|back|neck|spine|arm|leg|thigh|calf|heel)\b/i;
+          const BP_RE = /\b(hip|knee|shoulder|elbow|wrist|ankle|foot|hand|chest|finger|thumb|toe|back|neck|spine|arm|leg|thigh|calf|heel)\b/i;
           const bpMatch = s.match(BP_RE);
           if (bpMatch) {
             const bp = bpMatch[0];
@@ -774,7 +774,7 @@ function renderSoapPicker(typeData, isXrType = false) {
           soapTextarea.value = buildSoapText(lines);
         } else if (line === 'S') {
           const lines = soapLines();
-          const BODY_PARTS = new Set(['hip','knee','shoulder','elbow','eblow','wrist','ankle','foot','hand','chest','finger','thumb','toe','back','neck','spine','arm','leg','thigh','calf','heel']);
+          const BODY_PARTS = new Set(['hip','knee','shoulder','elbow','wrist','ankle','foot','hand','chest','finger','thumb','toe','back','neck','spine','arm','leg','thigh','calf','heel']);
           const isBodyPart = BODY_PARTS.has(item.trim().toLowerCase());
           const hasLtRt = /\b(Lt|Rt|Both)\b/.test(lines.S);
           const hasAfter = /\bafter\b/.test(lines.S);
