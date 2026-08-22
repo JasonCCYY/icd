@@ -540,7 +540,7 @@ function detectSide(sLine) {
   return null;
 }
 
-const TRAUMA_SIDE_TYPES = /^Trauma\s*(knee|shoulder|hip)/i;
+const TRAUMA_SIDE_TYPES = /^(Trauma|knee|shoulder|hip)$/i;
 
 function isSideType() {
   const t = document.querySelector('.soap-type-chip.active')?.textContent || '';
