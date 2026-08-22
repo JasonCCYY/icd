@@ -530,8 +530,20 @@ const soapCopyBtn   = document.getElementById('soap-copy-btn');
 const soapRestoreBtn= document.getElementById('soap-restore-btn');
 
 let soapCache   = {};        // { sheetName: groupedData }
-let soapSheet   = 'SOAP中正';
 let soapLastVal = '';
+
+function getDefaultSoapSheet() {
+  const now  = new Date();
+  const day  = now.getDay();                         // 0=Sun 1=Mon … 5=Fri 6=Sat
+  const mins = now.getHours() * 60 + now.getMinutes();
+  // Mon(1) & Fri(5): 08:20–12:00
+  if ((day === 1 || day === 5) && mins >= 500 && mins < 720) return 'SOAP門診';
+  // Wed(3) & Thu(4): 15:00–18:00
+  if ((day === 3 || day === 4) && mins >= 900 && mins < 1080) return 'SOAP門診';
+  return 'SOAP中正';
+}
+
+let soapSheet = getDefaultSoapSheet();
 let soapSide    = null;      // 'Lt' | 'Rt' | null
 
 function detectSide(sLine) {
@@ -845,7 +857,8 @@ document.querySelectorAll('.tab').forEach(btn => {
   if (btn.dataset.page === 'soap') {
     btn.addEventListener('click', () => {
       haShowSoap();
-      // restore active sheet button
+      // Auto-select sheet based on time schedule
+      soapSheet = getDefaultSoapSheet();
       soapTabBtns.forEach(b => b.classList.remove('active'));
       document.querySelector(`.soap-tab-btn[data-soap-sheet="${soapSheet}"]`).classList.add('active');
       renderSoapTypes(soapSheet);
