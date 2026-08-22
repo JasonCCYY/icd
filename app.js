@@ -713,10 +713,17 @@ function renderSoapPicker(typeData, isXrType = false) {
           const dxText = item.includes(' / ') ? item : item.replace(/[（(][^）)]*[）)]\s*/g, '').trim();
           const cur = soapTextarea.value.trimEnd();
           soapTextarea.value = cur ? `${cur}\n${dxText}` : dxText;
-        } else if (line === 'S' && /^(Lt|Rt)$/i.test(item)) {
+        } else if (line === 'S' && /^(Lt|Rt|Both)$/i.test(item)) {
           const lines = soapLines();
           const s = lines.S;
-          if (s.includes('pain after')) {
+          const BP_RE = /\b(hip|knee|shoulder|elbow|wrist|ankle|foot|hand|chest|finger|thumb|toe|back|neck|spine|arm|leg|thigh|calf|heel)\b/i;
+          const bpMatch = s.match(BP_RE);
+          if (bpMatch) {
+            // body part already in S → move it to right after Lt/Rt
+            const bp = bpMatch[0];
+            const rest = s.replace(new RegExp(`\\s*\\b${bp}\\b\\s*`), ' ').trim();
+            lines.S = `${item} ${bp}${rest ? ' ' + rest : ''}`;
+          } else if (s.includes('pain after')) {
             lines.S = s.replace(/^(.*?)(pain after)/, (_, pre, pa) => `${pre}${item} ${pa}`);
           } else {
             lines.S = s ? `${item} ${s}` : item;
