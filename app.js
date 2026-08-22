@@ -778,7 +778,10 @@ function renderSoapPicker(typeData, isXrType = false) {
           const isBodyPart = BODY_PARTS.has(item.trim().toLowerCase());
           const hasLtRt = /\b(Lt|Rt|Both)\b/.test(lines.S);
           const hasAfter = /\bafter\b/.test(lines.S);
-          if (isBodyPart && hasLtRt) {
+          if (/^(Lt|Rt|Both)\b/i.test(item)) {
+            // Sentence chip starting with Lt/Rt → replace entire S line
+            lines.S = item;
+          } else if (isBodyPart && hasLtRt) {
             lines.S = lines.S.replace(/\b(Lt|Rt|Both)\b/, `$1 ${item}`);
           } else if (!isBodyPart && hasAfter) {
             lines.S = lines.S.replace(/\bafter\b/, `after ${item}`);
