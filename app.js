@@ -540,14 +540,23 @@ function detectSide(sLine) {
   return null;
 }
 
+const TRAUMA_SIDE_TYPES = /^Trauma\s*(knee|shoulder|hip)/i;
+
+function isSideType() {
+  const t = document.querySelector('.soap-type-chip.active')?.textContent || '';
+  return TRAUMA_SIDE_TYPES.test(t);
+}
+
 function convertDxCode(text, side) {
-  if (!side) return text;
-  if (side === 'Rt') return text.replace(/([A-Z]\d+)2(XA|A)\b/g, '$11$2');
-  if (side === 'Lt') return text.replace(/([A-Z]\d+)1(XA|A)\b/g, '$12$2');
+  if (!side || !isSideType()) return text;
+  // Match ICD codes ending in 1XA, 2XA, 1A, 2A, or plain 1, 2
+  if (side === 'Rt') return text.replace(/([A-Z]\d+)2(XA|A|\b)/g, '$11$2');
+  if (side === 'Lt') return text.replace(/([A-Z]\d+)1(XA|A|\b)/g, '$12$2');
   return text;
 }
 
 function applyDxSide(forceSide) {
+  if (!isSideType()) return;
   const side = forceSide !== undefined ? forceSide : detectSide(soapLines().S);
   if (side === soapSide && forceSide === undefined) return;
   soapSide = side;
@@ -557,9 +566,9 @@ function applyDxSide(forceSide) {
     if (!orig) return;
     chip.textContent = convertDxCode(orig, side);
   });
-  // Update dx lines already in textarea (lines that look like ICD codes)
+  // Update dx lines already in textarea
   const tv = soapTextarea.value;
-  soapTextarea.value = tv.replace(/^([A-Z]\d+[12](XA|A).*)$/gm, line => convertDxCode(line, side));
+  soapTextarea.value = tv.replace(/^([A-Z]\d+[12].*)$/gm, line => convertDxCode(line, side));
 }
 
 // helpers
