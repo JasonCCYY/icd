@@ -778,8 +778,9 @@ function renderSoapPicker(typeData, isXrType = false) {
           const isBodyPart = BODY_PARTS.has(item.trim().toLowerCase());
           const hasLtRt = /\b(Lt|Rt|Both)\b/.test(lines.S);
           const hasAfter = /\bafter\b/.test(lines.S);
-          if (/^(Lt|Rt|Both)\b/i.test(item)) {
-            // Sentence chip starting with Lt/Rt → replace entire S line
+          const activeTypeName = document.querySelector('.soap-type-chip.active')?.textContent || '';
+          if (/^(Lt|Rt|Both)\b/i.test(item) && /^(shoulder|hip)$/i.test(activeTypeName)) {
+            // Shoulder/Hip only: Lt/Rt sentence chip replaces entire S line
             lines.S = item;
           } else if (isBodyPart && hasLtRt) {
             lines.S = lines.S.replace(/\b(Lt|Rt|Both)\b/, `$1 ${item}`);
