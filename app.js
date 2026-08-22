@@ -515,8 +515,9 @@ function addChipEvents(chip, onSingleClick, copyText) {
   chip.addEventListener('dblclick', e => {
     e.stopPropagation();
     if (timer) { clearTimeout(timer); timer = null; }
-    navigator.clipboard.writeText(copyText).catch(() => {});
-    const label = copyText.length > 14 ? copyText.slice(0, 14) + '…' : copyText;
+    const text = typeof copyText === 'function' ? copyText() : copyText;
+    navigator.clipboard.writeText(text).catch(() => {});
+    const label = text.length > 14 ? text.slice(0, 14) + '…' : text;
     showToast(`已複製：${label}`);
   });
 }
@@ -531,6 +532,35 @@ const soapRestoreBtn= document.getElementById('soap-restore-btn');
 let soapCache   = {};        // { sheetName: groupedData }
 let soapSheet   = 'SOAP中正';
 let soapLastVal = '';
+let soapSide    = null;      // 'Lt' | 'Rt' | null
+
+function detectSide(sLine) {
+  if (/\bLt\b/.test(sLine)) return 'Lt';
+  if (/\bRt\b/.test(sLine)) return 'Rt';
+  return null;
+}
+
+function convertDxCode(text, side) {
+  if (!side) return text;
+  if (side === 'Rt') return text.replace(/([A-Z]\d+)2(XA|A)\b/g, '$11$2');
+  if (side === 'Lt') return text.replace(/([A-Z]\d+)1(XA|A)\b/g, '$12$2');
+  return text;
+}
+
+function applyDxSide(forceSide) {
+  const side = forceSide !== undefined ? forceSide : detectSide(soapLines().S);
+  if (side === soapSide && forceSide === undefined) return;
+  soapSide = side;
+  // Update dx chips
+  document.querySelectorAll('#soap-dx-chips .soap-chip').forEach(chip => {
+    const orig = chip.dataset.origText;
+    if (!orig) return;
+    chip.textContent = convertDxCode(orig, side);
+  });
+  // Update dx lines already in textarea (lines that look like ICD codes)
+  const tv = soapTextarea.value;
+  soapTextarea.value = tv.replace(/^([A-Z]\d+[12](XA|A).*)$/gm, line => convertDxCode(line, side));
+}
 
 // helpers
 function todayStr() {
@@ -690,12 +720,14 @@ function renderSoapPicker(typeData, isXrType = false) {
     { id: 'soap-p-chips',  key: 'P',  line: 'P'  },
     { id: 'soap-dx-chips', key: 'dx', line: '__dx__' },
   ];
+  soapSide = detectSide(soapLines().S); // reset side on re-render
   sections.forEach(({ id, key, line }) => {
     const container = document.getElementById(id);
-    const section   = container.closest('.soap-chip-section');
+    const section   = container ? container.closest('.soap-chip-section') : null;
     const items     = typeData[key] || [];
+    if (!container) return;
     container.innerHTML = '';
-    section.hidden = items.length === 0;
+    if (section) section.hidden = items.length === 0;
     items.forEach(item => {
       // Line-break separator
       if (item.trim() === '---') {
@@ -708,9 +740,11 @@ function renderSoapPicker(typeData, isXrType = false) {
       chip.className = 'soap-chip';
       chip.textContent = item;
       if (item.trim() === '---') { chip.dataset.sep = '1'; }
+      if (line === '__dx__') chip.dataset.origText = item;
       addChipEvents(chip, () => {
         if (line === '__dx__') {
-          const dxText = item.includes(' / ') ? item : item.replace(/[（(][^）)]*[）)]\s*/g, '').trim();
+          const effective = convertDxCode(chip.dataset.origText || item, soapSide);
+          const dxText = effective.includes(' / ') ? effective : effective.replace(/[（(][^）)]*[）)]\s*/g, '').trim();
           const cur = soapTextarea.value.trimEnd();
           soapTextarea.value = cur ? `${cur}\n${dxText}` : dxText;
         } else if (line === 'S' && /^(Lt|Rt|Both)$/i.test(item)) {
@@ -756,10 +790,12 @@ function renderSoapPicker(typeData, isXrType = false) {
         }
         chip.classList.add('soap-chip-used');
         setTimeout(() => chip.classList.remove('soap-chip-used'), 600);
-      }, line === '__dx__' ? (item.includes(' / ') ? item : item.replace(/[（(][^）)]*[）)]\s*/g, '').trim()) : item);
+        if (line === 'S') applyDxSide();
+      }, line === '__dx__' ? () => { const e = convertDxCode(chip.dataset.origText || item, soapSide); return e.includes(' / ') ? e : e.replace(/[（(][^）)]*[）)]\s*/g, '').trim(); } : item);
       container.appendChild(chip);
     });
   });
+  applyDxSide(soapSide);
 }
 
 // Tab switch (中正/門診 only — HA handled separately)
