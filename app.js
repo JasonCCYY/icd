@@ -758,11 +758,11 @@ function renderSoapPicker(typeData, isXrType = false) {
           soapTextarea.value = cur ? `${cur}\n${dxText}` : dxText;
         } else if (line === 'S' && /^(Lt|Rt|Both)$/i.test(item)) {
           const lines = soapLines();
-          const s = lines.S;
+          // Remove any existing Lt/Rt/Both before inserting the new one
+          const s = lines.S.replace(/\s*\b(Lt|Rt|Both)\b\s*/gi, ' ').trim();
           const BP_RE = /\b(hip|knee|shoulder|elbow|wrist|ankle|foot|hand|chest|finger|thumb|toe|back|neck|spine|arm|leg|thigh|calf|heel)\b/i;
           const bpMatch = s.match(BP_RE);
           if (bpMatch) {
-            // body part already in S → move it to right after Lt/Rt
             const bp = bpMatch[0];
             const rest = s.replace(new RegExp(`\\s*\\b${bp}\\b\\s*`), ' ').trim();
             lines.S = `${item} ${bp}${rest ? ' ' + rest : ''}`;
