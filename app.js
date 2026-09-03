@@ -97,6 +97,45 @@ function expandAbbr(raw) {
 const API_BASE = 'https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search';
 let abortController = null;
 
+// ─── 診斷碼 Sheet data ───────────────────────────────────────────────────────
+let diagSheetData = null; // [{name, code}]
+
+async function loadDiagData() {
+  if (diagSheetData) return diagSheetData;
+  const cached = lsGet('diag_sheet');
+  if (cached) { diagSheetData = cached; return cached; }
+  try {
+    const url = `${OPS_SCRIPT_URL}?token=${encodeURIComponent(OPS_TOKEN)}&sheet=${encodeURIComponent('診斷碼')}`;
+    const resp = await fetch(url);
+    const json = await resp.json();
+    if (json.status === 'ok') {
+      diagSheetData = json.data;
+      lsSet('diag_sheet', diagSheetData);
+    }
+  } catch(e) {}
+  return diagSheetData;
+}
+
+function searchDiagSheet(query) {
+  if (!diagSheetData) return [];
+  const q = query.toLowerCase();
+  return diagSheetData.filter(r => r.name.toLowerCase().includes(q));
+}
+
+async function lookupCodeInfo(code) {
+  // Look up a specific ICD code via NLM API to get English + Chinese names
+  const url = `${API_BASE}?terms=${encodeURIComponent(code)}&sf=code,name&df=code,name&maxList=5`;
+  try {
+    const resp = await fetch(url);
+    const data = await resp.json();
+    const items = data[3] || [];
+    // Find exact code match
+    const match = items.find(([c]) => c.replace(/\./g,'') === code.replace(/\./g,''));
+    if (match) return { code: match[0], name: match[1] };
+  } catch(e) {}
+  return null;
+}
+
 async function searchICD(query) {
   if (abortController) abortController.abort();
   abortController = new AbortController();
@@ -121,16 +160,17 @@ function renderResults(items) {
     resultsList.innerHTML = '<li class="no-results">查無結果</li>';
     return;
   }
-  for (const { code, name } of items) {
+  for (const { code, name, sheetName } of items) {
     const zh = getZhName(code);
     const li = document.createElement('li');
-    li.className = 'result-item';
+    li.className = 'result-item' + (sheetName ? ' result-sheet' : '');
     li.innerHTML = `
       <div class="result-inner">
         <span class="code-badge">${escHtml(code)}</span>
         <span class="result-text-wrap">
           <span class="result-en">${escHtml(name)}</span>
           ${zh ? `<span class="result-zh">${escHtml(zh)}</span>` : ''}
+          ${sheetName ? `<span class="result-sheet-name">${escHtml(sheetName)}</span>` : ''}
         </span>
       </div>`;
     li.addEventListener('click', () => copyCode(li, code));
@@ -213,9 +253,27 @@ async function doSearch(query) {
   statusEl.innerHTML = '<span class="spinner"></span>搜索中…';
   resultsList.innerHTML = '';
   try {
-    const items = await searchICD(query);
-    statusEl.textContent = items.length ? `找到 ${items.length} 筆結果` : '';
-    renderResults(items);
+    // Search Sheet and NLM in parallel
+    const [apiItems, diagData] = await Promise.all([
+      searchICD(query),
+      loadDiagData(),
+    ]);
+
+    // Sheet matches (top 2), look up each code via NLM
+    const sheetMatches = searchDiagSheet(query).slice(0, 2);
+    const sheetResults = await Promise.all(sheetMatches.map(async r => {
+      const info = await lookupCodeInfo(r.code);
+      if (!info) return { code: r.code, name: r.code, sheetName: r.name };
+      return { code: info.code, name: info.name, sheetName: r.name };
+    }));
+
+    // NLM results, skip codes already shown from Sheet
+    const sheetCodes = new Set(sheetResults.map(r => r.code.replace(/\./g,'')));
+    const apiFiltered = apiItems.filter(r => !sheetCodes.has(r.code.replace(/\./g,'')));
+
+    const all = [...sheetResults, ...apiFiltered];
+    statusEl.textContent = all.length ? `找到 ${all.length} 筆結果` : '';
+    renderResults(all);
   } catch (e) {
     if (e.name === 'AbortError') return;
     statusEl.textContent = '網路錯誤，請稍後再試';
@@ -1334,12 +1392,13 @@ function prefetchAll() {
   loadSoapData('SOAP門診');
   loadCertData('診斷書中正');
   loadCertData('診斷書門診');
+  loadDiagData();
   // notes loaded on demand
 }
 
 // ─── Refresh button ───────────────────────────────────────────────────────────
 document.getElementById('refresh-btn').addEventListener('click', () => {
-  ['ops','soap_SOAP中正','soap_SOAP門診','cert_診斷書中正','cert_診斷書門診','notes','pt'].forEach(k => {
+  ['ops','soap_SOAP中正','soap_SOAP門診','cert_診斷書中正','cert_診斷書門診','notes','pt','diag_sheet'].forEach(k => {
     try { localStorage.removeItem(k); } catch(e) {}
   });
   location.reload();

@@ -49,6 +49,17 @@ function doGet(e) {
       return output(grouped, 'ok');
     }
 
+    // ── 診斷碼 ──────────────────────────────────────────────────────────────
+    if (sheetName === '診斷碼') {
+      const data = rows
+        .map(r => ({
+          name: String(r[0]||'').trim(),
+          code: String(r[1]||'').trim(),
+        }))
+        .filter(r => r.name && r.code);
+      return output(data, 'ok');
+    }
+
     // ── 手術碼 ──────────────────────────────────────────────────────────────
     if (sheetName === '手術碼') {
       const data = rows
