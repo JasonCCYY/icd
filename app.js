@@ -118,8 +118,11 @@ async function loadDiagData() {
 
 function searchDiagSheet(query) {
   if (!diagSheetData) return [];
-  const q = query.toLowerCase();
-  return diagSheetData.filter(r => r.name.toLowerCase().includes(q));
+  const tokens = query.toLowerCase().split(/\s+/).filter(Boolean);
+  return diagSheetData.filter(r => {
+    const name = r.name.toLowerCase();
+    return tokens.every(t => name.includes(t));
+  });
 }
 
 async function lookupCodeInfo(code) {
@@ -260,7 +263,7 @@ async function doSearch(query) {
     ]);
 
     // Sheet matches (top 2), look up each code via NLM
-    const sheetMatches = searchDiagSheet(query).slice(0, 2);
+    const sheetMatches = searchDiagSheet(query).slice(0, 5);
     const sheetResults = await Promise.all(sheetMatches.map(async r => {
       const info = await lookupCodeInfo(r.code);
       if (!info) return { code: r.code, name: r.code, sheetName: r.name };
