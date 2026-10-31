@@ -250,17 +250,46 @@
     });
     setTimeout(() => document.getElementById('pw-input').focus(), 100);
   }
+  const AUTO_LOGOUT_MS = 20 * 60 * 1000;
+  let autoLogoutTimer = null;
+
+  function resetAutoLogout() {
+    clearTimeout(autoLogoutTimer);
+    autoLogoutTimer = setTimeout(doLock, AUTO_LOGOUT_MS);
+  }
+
+  function doLock() {
+    clearTimeout(autoLogoutTimer);
+    sessionStorage.removeItem('icd_auth');
+    const lockEl = document.createElement('div');
+    lockEl.id = 'lock-screen';
+    lockEl.innerHTML = `<div id="lock-box"><div id="lock-icon">🏥</div><input id="pw-input" type="password" placeholder="" autocomplete="current-password" inputmode="numeric"/><button id="pw-btn">確認</button><div id="pw-error"></div></div>`;
+    document.body.prepend(lockEl);
+    document.getElementById('app').hidden = true;
+    bindLock();
+    setTimeout(() => document.getElementById('pw-input').focus(), 100);
+  }
+
+  function startActivityWatch() {
+    resetAutoLogout();
+    ['click','keydown','touchstart','scroll'].forEach(ev =>
+      document.addEventListener(ev, resetAutoLogout, { passive: true })
+    );
+  }
+
   function doUnlock() {
     sessionStorage.setItem('icd_auth', '1');
     document.getElementById('lock-screen').remove();
     document.getElementById('app').hidden = false;
     addBackBtn();
+    startActivityWatch();
     setTimeout(() => { if (typeof prefetchAll === 'function') prefetchAll(); }, 300);
   }
   if (sessionStorage.getItem('icd_auth') === '1') {
     document.getElementById('lock-screen').remove();
     document.getElementById('app').hidden = false;
     addBackBtn();
+    startActivityWatch();
   } else if (location.hash) {
     const raw = location.hash.slice(1);
     history.replaceState(null, '', location.pathname + location.search);
