@@ -277,19 +277,21 @@
     );
   }
 
+  const isPrivate = () => sessionStorage.getItem('icd_private') === '1';
+
   function doUnlock() {
     sessionStorage.setItem('icd_auth', '1');
     document.getElementById('lock-screen').remove();
     document.getElementById('app').hidden = false;
     addBackBtn();
-    startActivityWatch();
+    if (!isPrivate()) startActivityWatch();
     setTimeout(() => { if (typeof prefetchAll === 'function') prefetchAll(); }, 300);
   }
   if (sessionStorage.getItem('icd_auth') === '1') {
     document.getElementById('lock-screen').remove();
     document.getElementById('app').hidden = false;
     addBackBtn();
-    startActivityWatch();
+    if (!isPrivate()) startActivityWatch();
   } else if (location.hash) {
     const raw = location.hash.slice(1);
     history.replaceState(null, '', location.pathname + location.search);
