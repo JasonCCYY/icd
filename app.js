@@ -792,7 +792,7 @@ function renderInjectionPicker(typeData) {
     chip.textContent = item;
     chip.addEventListener('click', async () => {
       if (chip.disabled) return;
-      if (!confirm(`確認新增：${item}？`)) return;
+      if (!confirm('確認新增？')) return;
       chip.disabled = true;
       const ok = await sendInjection(item);
       chip.disabled = false;
