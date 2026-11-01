@@ -790,13 +790,24 @@ function renderInjectionPicker(typeData) {
     const chip = document.createElement('button');
     chip.className = 'soap-chip';
     chip.textContent = item;
-    chip.addEventListener('click', async () => {
+    const run = async times => {
       if (chip.disabled) return;
-      if (!confirm('確認新增？')) return;
+      if (!confirm(times > 1 ? `確認新增 X${times}？` : '確認新增？')) return;
       chip.disabled = true;
-      const ok = await sendInjection(item);
+      let ok = true;
+      for (let i = 0; i < times; i++) ok = (await sendInjection(item)) && ok;
       chip.disabled = false;
       showToast(ok ? '已完成' : '失敗');
+    };
+    let timer = null;
+    chip.addEventListener('click', () => {
+      if (timer) return;
+      timer = setTimeout(() => { timer = null; run(1); }, 220);
+    });
+    chip.addEventListener('dblclick', e => {
+      e.stopPropagation();
+      if (timer) { clearTimeout(timer); timer = null; }
+      run(2);
     });
     container.appendChild(chip);
   });
