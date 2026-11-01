@@ -1,6 +1,53 @@
 // ─── 設定 ────────────────────────────────────────────────────────────────────
 const SECRET_TOKEN = 'cycicd-ops-X7m3K9pQ';
 
+// ─── 針劑 → 手術紀錄試算表 ────────────────────────────────────────────────────
+const ORTHO_SS_ID = '1g_nw2_rzJfrzu0KEOPaW3lSDNxxaDweN2FeWzONqCbg';
+
+// key = category(mat/clinic) + '_' + 按鈕文字(去空白)
+const PRODUCTS = {
+  'mat_羊膜10mg':    ['小施', '羊膜10mg',  5000],
+  'mat_羊膜20mg':    ['小施', '羊膜20mg', 14000],
+  'mat_PRP15K':      ['小施', 'PRP 15K',   5650],
+  'mat_PRP36K':      ['小施', 'PRP 36K',  13420],
+  'mat_RevoTend':    ['浩群', 'RevoTend',  6860],
+  'clinic_外泌體':   ['外泌體',   3000],
+  'clinic_PRP':      ['PRP',      3000],
+  'clinic_門診護具': ['門診護具',    0],
+  'clinic_增生':     ['增生',      400],
+  'clinic_玻尿酸':   ['玻尿酸',    345],
+  'clinic_震波':     ['震波',      250],
+};
+
+function doPost(e) {
+  const out = (status, msg) =>
+    ContentService
+      .createTextOutput(JSON.stringify({ status, msg }))
+      .setMimeType(ContentService.MimeType.JSON);
+  try {
+    const data = JSON.parse(e.postData.contents);
+    if (data.token !== SECRET_TOKEN) return out('unauthorized', 'invalid token');
+    if (data.action !== 'injection') return out('error', 'unknown action');
+
+    const key = String(data.category || '') + '_' + String(data.name || '').replace(/\s+/g, '');
+    const p = PRODUCTS[key];
+    if (!p) return out('error', 'unknown: ' + key);
+
+    const ss  = SpreadsheetApp.openById(ORTHO_SS_ID);
+    const day = Utilities.formatDate(new Date(), 'Asia/Taipei', 'yyyy/MM/dd');
+    if (data.category === 'mat') {
+      const [brand, product, price] = p;
+      ss.getSheetByName('骨材記錄').appendRow([day, brand, product, price, 1, '門診', 'false']);
+    } else {
+      const [product, price] = p;
+      ss.getSheetByName('門診記錄').appendRow([day, product, price, 1]);
+    }
+    return out('ok', 'ok');
+  } catch (err) {
+    return out('error', err.message);
+  }
+}
+
 // ─── 主要入口 ─────────────────────────────────────────────────────────────────
 function doGet(e) {
   const output = (data, status) =>

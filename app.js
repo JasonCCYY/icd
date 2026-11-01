@@ -754,9 +754,58 @@ async function loadSoapData(sheet) {
 }
 
 // Render type buttons
+const soapEditorArea = document.getElementById('soap-editor-area');
+
+function setInjectionMode(on) {
+  soapEditorArea.hidden = on;
+  soapPicker.classList.toggle('injection-mode', on);
+}
+
+async function sendInjection(name) {
+  const category = soapIs中正() ? 'mat' : 'clinic';
+  try {
+    const resp = await fetch(OPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ token: OPS_TOKEN, action: 'injection', category, name }),
+    });
+    const json = await resp.json();
+    return json.status === 'ok';
+  } catch (e) {
+    return false;
+  }
+}
+
+function renderInjectionPicker(typeData) {
+  soapPicker.hidden = false;
+  ['soap-pe-chips', 'soap-xr-chips', 'soap-p-chips', 'soap-dx-chips'].forEach(id => {
+    const c = document.getElementById(id);
+    if (c) { c.innerHTML = ''; c.closest('.soap-chip-section').hidden = true; }
+  });
+  const container = document.getElementById('soap-s-chips');
+  container.innerHTML = '';
+  container.closest('.soap-chip-section').hidden = false;
+  (typeData.S || []).forEach(item => {
+    if (item.trim() === '---') return;
+    const chip = document.createElement('button');
+    chip.className = 'soap-chip';
+    chip.textContent = item;
+    chip.addEventListener('click', async () => {
+      if (chip.disabled) return;
+      if (!confirm(`確認新增：${item}？`)) return;
+      chip.disabled = true;
+      const ok = await sendInjection(item);
+      chip.disabled = false;
+      showToast(ok ? '已完成' : '失敗');
+    });
+    container.appendChild(chip);
+  });
+}
+
 async function renderSoapTypes(sheet) {
   soapTypeBtns.innerHTML = '<span style="color:#aaa;font-size:.85rem">載入中…</span>';
   soapPicker.hidden = true;
+  setInjectionMode(false);
   const data = await loadSoapData(sheet);
   soapTypeBtns.innerHTML = '';
   if (!data) {
@@ -771,6 +820,9 @@ async function renderSoapTypes(sheet) {
       document.querySelectorAll('.soap-type-chip').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const typeData = data[type];
+      const injection = type === '針劑';
+      setInjectionMode(injection);
+      if (injection) { renderInjectionPicker(typeData); return; }
       soapXrLabel = (typeData.XR || []).some(v => v.startsWith('A:')) ? 'A' : 'XR';
       renderSoapPicker(typeData, type === 'X光');
       const isSingle = ['S','PE','XR','P','dx'].every(k => (typeData[k]||[]).length <= 1);

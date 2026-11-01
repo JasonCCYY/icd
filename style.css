@@ -513,6 +513,13 @@ body {
 #soap-picker {
   padding: 8px 16px 0;
 }
+#soap-picker.injection-mode .soap-section-label { display: none; }
+#soap-picker.injection-mode .soap-chips {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+}
+#soap-picker.injection-mode .soap-chip { text-align: center; padding: 12px 14px; }
 
 .soap-chip-section {
   margin-bottom: 8px;
