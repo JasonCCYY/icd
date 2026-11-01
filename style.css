@@ -517,9 +517,8 @@ body {
 #soap-picker.injection-mode .soap-chips {
   flex-direction: column;
   flex-wrap: nowrap;
-  align-items: stretch;
+  align-items: flex-start;
 }
-#soap-picker.injection-mode .soap-chip { text-align: center; padding: 12px 14px; }
 
 .soap-chip-section {
   margin-bottom: 8px;
