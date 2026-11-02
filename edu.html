@@ -59,10 +59,24 @@
   document.getElementById('pw-btn').addEventListener('click', tryUnlock);
   pwInput.addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
 
+  function closeOrLock() {
+    sessionStorage.removeItem('icd_auth');
+    window.close();
+    setTimeout(showLock, 300);
+  }
+
+  let lastAlive = Date.now();
   channel.onmessage = e => {
-    if (e.data === 'lock') { sessionStorage.removeItem('icd_auth'); showLock(); }
+    if (e.data === 'alive') lastAlive = Date.now();
+    else if (e.data === 'lock') closeOrLock();
     else if (e.data === 'unlock') { sessionStorage.setItem('icd_auth', '1'); hideLock(); }
   };
+  // 只有由 App 開啟的分頁才檢查主 App 是否還開著
+  if (window.opener) {
+    setInterval(() => {
+      if (Date.now() - lastAlive > 120000) closeOrLock();
+    }, 15000);
+  }
 
   frame.src = EDU_PRES_URL;
   if (sessionStorage.getItem('icd_auth') !== '1' && sessionStorage.getItem('icd_private') !== '1') showLock();

@@ -250,21 +250,46 @@
     });
     setTimeout(() => document.getElementById('pw-input').focus(), 100);
   }
-  const AUTO_LOGOUT_MS = 20 * 60 * 1000;
-  let autoLogoutTimer = null;
+  // 每個時間點起 1 小時內，5 分鐘沒操作就鎖定；其餘時間不自動鎖
+  const IDLE_LOCK_MS = 5 * 60 * 1000;
+  const LOCK_WINDOW_MS = 60 * 60 * 1000;
+  const LOCK_STARTS = {
+    1: ['11:15', '21:15'],
+    2: ['17:00'],
+    3: ['17:45'],
+    4: ['12:00', '17:45'],
+    5: ['11:45', '21:30'],
+    6: ['12:00', '17:00'],
+  };
+  let lastActivity = Date.now();
+  const markActivity = () => { lastActivity = Date.now(); };
 
-  function resetAutoLogout() {
-    clearTimeout(autoLogoutTimer);
-    autoLogoutTimer = setTimeout(doLock, AUTO_LOGOUT_MS);
+  function currentLockWindowStart() {
+    const now = new Date();
+    for (const s of LOCK_STARTS[now.getDay()] || []) {
+      const [h, m] = s.split(':').map(Number);
+      const t = new Date(now);
+      t.setHours(h, m, 0, 0);
+      if (now >= t && now - t < LOCK_WINDOW_MS) return t.getTime();
+    }
+    return null;
+  }
+
+  function checkIdleLock() {
+    if (isPrivate() || document.getElementById('lock-screen')) return;
+    const ws = currentLockWindowStart();
+    if (ws === null) return;
+    if (Date.now() - Math.max(lastActivity, ws) >= IDLE_LOCK_MS) doLock();
   }
 
   const lockChannel = new BroadcastChannel('icd_lock');
   lockChannel.onmessage = e => {
     if (e.data === 'unlock' && document.getElementById('lock-screen')) doUnlock(true);
   };
+  setInterval(() => lockChannel.postMessage('alive'), 30000);
+  setInterval(checkIdleLock, 15000);
 
   function doLock() {
-    clearTimeout(autoLogoutTimer);
     if (document.getElementById('lock-screen')) return;
     sessionStorage.removeItem('icd_auth');
     lockChannel.postMessage('lock');
@@ -279,11 +304,11 @@
 
   let activityBound = false;
   function startActivityWatch() {
-    resetAutoLogout();
+    markActivity();
     if (activityBound) return;
     activityBound = true;
     ['click','keydown','touchstart','scroll'].forEach(ev =>
-      document.addEventListener(ev, resetAutoLogout, { passive: true })
+      document.addEventListener(ev, markActivity, { passive: true })
     );
   }
 
@@ -296,6 +321,10 @@
     document.getElementById('app').hidden = false;
     addBackBtn();
     if (!isPrivate()) startActivityWatch();
+    if (fromRemote !== true && !isPrivate() && !sessionStorage.getItem('icd_edu_opened')) {
+      sessionStorage.setItem('icd_edu_opened', '1');
+      window.open('edu.html', '_blank');
+    }
     setTimeout(() => { if (typeof prefetchAll === 'function') prefetchAll(); }, 300);
   }
   if (sessionStorage.getItem('icd_auth') === '1') {

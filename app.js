@@ -601,6 +601,8 @@ function getDefaultSoapSheet() {
   if ((day === 1 || day === 5) && mins >= 500 && mins < 720) return 'SOAP門診';
   // Wed(3) & Thu(4): 15:00–18:00
   if ((day === 3 || day === 4) && mins >= 900 && mins < 1080) return 'SOAP門診';
+  // Mon(1) evening: 18:30–21:30
+  if (day === 1 && mins >= 1110 && mins < 1290) return 'SOAP門診';
   return 'SOAP中正';
 }
 
