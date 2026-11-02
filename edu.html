@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>衛教</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #fff; }
+    #lock-screen[hidden] { display: none; }
+    #edu-frame { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; }
+  </style>
+</head>
+<body>
+  <iframe id="edu-frame" allowfullscreen></iframe>
+
+  <div id="lock-screen" hidden>
+    <div id="lock-box">
+      <div id="lock-icon">🏥</div>
+      <input id="pw-input" type="password" placeholder="" autocomplete="current-password" inputmode="numeric" />
+      <button id="pw-btn">確認</button>
+      <div id="pw-error"></div>
+    </div>
+  </div>
+
+  <script>
+  const PW_HASH = '6ed09607ae0f7186a908a39b29e64cea658d96283aa28d37cebf3af395911895';
+  const EDU_PRES_URL = 'https://docs.google.com/presentation/d/1M2-ZfIjzO0mXN2nePp99eWvPHYpaTX1TFthmtVwh0Ms/preview#slide=id.g3f2647bc135_0_279';
+
+  const frame = document.getElementById('edu-frame');
+  const lockEl = document.getElementById('lock-screen');
+  const pwInput = document.getElementById('pw-input');
+  const channel = new BroadcastChannel('icd_lock');
+
+  function showLock() {
+    lockEl.hidden = false;
+    pwInput.value = '';
+    setTimeout(() => pwInput.focus(), 100);
+  }
+  function hideLock() { lockEl.hidden = true; }
+
+  async function sha256(str) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+  async function tryUnlock() {
+    if (await sha256(pwInput.value) === PW_HASH) {
+      sessionStorage.setItem('icd_auth', '1');
+      channel.postMessage('unlock');
+      hideLock();
+    } else {
+      const err = document.getElementById('pw-error');
+      err.textContent = '密碼錯誤';
+      pwInput.value = '';
+      setTimeout(() => { err.textContent = ''; }, 2000);
+    }
+  }
+
+  document.getElementById('pw-btn').addEventListener('click', tryUnlock);
+  pwInput.addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock(); });
+
+  channel.onmessage = e => {
+    if (e.data === 'lock') { sessionStorage.removeItem('icd_auth'); showLock(); }
+    else if (e.data === 'unlock') { sessionStorage.setItem('icd_auth', '1'); hideLock(); }
+  };
+
+  frame.src = EDU_PRES_URL;
+  if (sessionStorage.getItem('icd_auth') !== '1' && sessionStorage.getItem('icd_private') !== '1') showLock();
+  </script>
+</body>
+</html>

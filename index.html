@@ -258,9 +258,16 @@
     autoLogoutTimer = setTimeout(doLock, AUTO_LOGOUT_MS);
   }
 
+  const lockChannel = new BroadcastChannel('icd_lock');
+  lockChannel.onmessage = e => {
+    if (e.data === 'unlock' && document.getElementById('lock-screen')) doUnlock(true);
+  };
+
   function doLock() {
     clearTimeout(autoLogoutTimer);
+    if (document.getElementById('lock-screen')) return;
     sessionStorage.removeItem('icd_auth');
+    lockChannel.postMessage('lock');
     const lockEl = document.createElement('div');
     lockEl.id = 'lock-screen';
     lockEl.innerHTML = `<div id="lock-box"><div id="lock-icon">🏥</div><input id="pw-input" type="password" placeholder="" autocomplete="current-password" inputmode="numeric"/><button id="pw-btn">確認</button><div id="pw-error"></div></div>`;
@@ -270,8 +277,11 @@
     setTimeout(() => document.getElementById('pw-input').focus(), 100);
   }
 
+  let activityBound = false;
   function startActivityWatch() {
     resetAutoLogout();
+    if (activityBound) return;
+    activityBound = true;
     ['click','keydown','touchstart','scroll'].forEach(ev =>
       document.addEventListener(ev, resetAutoLogout, { passive: true })
     );
@@ -279,8 +289,9 @@
 
   const isPrivate = () => sessionStorage.getItem('icd_private') === '1';
 
-  function doUnlock() {
+  function doUnlock(fromRemote) {
     sessionStorage.setItem('icd_auth', '1');
+    if (fromRemote !== true) lockChannel.postMessage('unlock');
     document.getElementById('lock-screen').remove();
     document.getElementById('app').hidden = false;
     addBackBtn();
