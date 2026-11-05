@@ -346,22 +346,66 @@ let opsData = null; // parsed rows
 let notesData = null;
 let notesLoaded = false;
 
+const isQuickKey = t => /^(常用|常見)/.test(t);
+
+async function ensureNotesData() {
+  if (notesData) return notesData;
+  const cached = lsGet('notes');
+  if (cached) { notesData = cached; return notesData; }
+  const url = `${OPS_SCRIPT_URL}?token=${encodeURIComponent(OPS_TOKEN)}&sheet=${encodeURIComponent('備註')}`;
+  const data = await fetchWithRetry(url);
+  if (data) { notesData = data; lsSet('notes', notesData); }
+  return notesData;
+}
+
+function bindNoteCopy(el, text) {
+  let timer = null;
+  el.addEventListener('click', () => {
+    if (timer) return;
+    timer = setTimeout(() => {
+      timer = null;
+      navigator.clipboard.writeText(text).catch(() => {});
+      showToast(`已複製`);
+      el.classList.add('notes-row-flash');
+      setTimeout(() => el.classList.remove('notes-row-flash'), 500);
+    }, 220);
+  });
+  el.addEventListener('dblclick', e => {
+    e.stopPropagation();
+    if (timer) { clearTimeout(timer); timer = null; }
+    navigator.clipboard.writeText(text).catch(() => {});
+    showToast(`已複製`);
+  });
+}
+
+function renderQuickCards(container) {
+  Object.keys(notesData || {}).filter(isQuickKey).forEach(key => {
+    const card = document.createElement('div');
+    card.className = 'notes-card';
+    const title = document.createElement('div');
+    title.className = 'notes-card-title';
+    title.textContent = key.replace(/^(常用|常見)[-－—]?\s*/, '') || key;
+    card.appendChild(title);
+    (notesData[key] || []).forEach(text => {
+      const chip = document.createElement('div');
+      chip.className = 'notes-chip';
+      chip.textContent = text;
+      bindNoteCopy(chip, text);
+      card.appendChild(chip);
+    });
+    container.appendChild(card);
+  });
+}
+
 async function loadNotes() {
   const typeBtns = document.getElementById('notes-type-btns');
   const listEl   = document.getElementById('notes-list');
   if (notesLoaded) return;
   typeBtns.innerHTML = '<span style="color:#aaa;font-size:.85rem">載入中…</span>';
-  const cached = lsGet('notes');
-  if (cached) { notesData = cached; }
-  else {
-    const url = `${OPS_SCRIPT_URL}?token=${encodeURIComponent(OPS_TOKEN)}&sheet=${encodeURIComponent('備註')}`;
-    const data = await fetchWithRetry(url);
-    if (!data) {
-      typeBtns.innerHTML = '<span style="color:#d93025;font-size:.85rem">載入失敗</span>';
-      return;
-    }
-    notesData = data;
-    lsSet('notes', notesData);
+  await ensureNotesData();
+  if (!notesData) {
+    typeBtns.innerHTML = '<span style="color:#d93025;font-size:.85rem">載入失敗</span>';
+    return;
   }
   notesLoaded = true;
 
@@ -369,55 +413,15 @@ async function loadNotes() {
   typeBtns.innerHTML = '';
   let activeType = null;
   const QUICK_TAB = '常用';
-  const quickKeys = Object.keys(notesData).filter(t => /^(常用|常見)/.test(t));
-  const types = Object.keys(notesData).filter(t => !/^(常用|常見)/.test(t));
-  if (quickKeys.length) types.push(QUICK_TAB);
-
-  function bindNoteCopy(el, text) {
-    let timer = null;
-    el.addEventListener('click', () => {
-      if (timer) return;
-      timer = setTimeout(() => {
-        timer = null;
-        navigator.clipboard.writeText(text).catch(() => {});
-        showToast(`已複製`);
-        el.classList.add('notes-row-flash');
-        setTimeout(() => el.classList.remove('notes-row-flash'), 500);
-      }, 220);
-    });
-    el.addEventListener('dblclick', e => {
-      e.stopPropagation();
-      if (timer) { clearTimeout(timer); timer = null; }
-      navigator.clipboard.writeText(text).catch(() => {});
-      showToast(`已複製`);
-    });
-  }
-
-  function showQuick() {
-    quickKeys.forEach(key => {
-      const card = document.createElement('div');
-      card.className = 'notes-card';
-      const title = document.createElement('div');
-      title.className = 'notes-card-title';
-      title.textContent = key.replace(/^(常用|常見)[-－—]?\s*/, '') || key;
-      card.appendChild(title);
-      (notesData[key] || []).forEach(text => {
-        const chip = document.createElement('div');
-        chip.className = 'notes-chip';
-        chip.textContent = text;
-        bindNoteCopy(chip, text);
-        card.appendChild(chip);
-      });
-      listEl.appendChild(card);
-    });
-  }
+  const types = Object.keys(notesData).filter(t => !isQuickKey(t));
+  if (Object.keys(notesData).some(isQuickKey)) types.push(QUICK_TAB);
 
   function showType(type) {
     activeType = type;
     typeBtns.querySelectorAll('.soap-type-chip').forEach(b =>
       b.classList.toggle('active', b.textContent === type));
     listEl.innerHTML = '';
-    if (type === QUICK_TAB) { showQuick(); return; }
+    if (type === QUICK_TAB) { renderQuickCards(listEl); return; }
     (notesData[type] || []).forEach(text => {
       const row = document.createElement('div');
       row.className = 'notes-row';
@@ -563,6 +567,7 @@ function copyText(text, el) {
 let opsDebounce = null;
 opsSearchInput.addEventListener('input', () => {
   const q = opsSearchInput.value;
+  opsQuickBtn.classList.remove('active');
   opsClearBtn.classList.toggle('visible', q.length > 0);
   clearTimeout(opsDebounce);
   opsDebounce = setTimeout(async () => {
@@ -575,13 +580,30 @@ opsSearchInput.addEventListener('input', () => {
 
 opsClearBtn.addEventListener('click', () => {
   opsSearchInput.value = '';
+  opsQuickBtn.classList.remove('active');
   opsClearBtn.classList.remove('visible');
   opsResultsEl.innerHTML = '';
   opsStatusEl.textContent = '';
   opsSearchInput.focus();
 });
 
+const opsQuickBtn = document.getElementById('ops-quick-btn');
+
+opsQuickBtn.addEventListener('click', async () => {
+  opsSearchInput.value = '';
+  opsClearBtn.classList.remove('visible');
+  opsStatusEl.textContent = '';
+  opsResultsEl.innerHTML = '';
+  opsQuickBtn.classList.add('active');
+  await ensureNotesData();
+  if (!notesData) { opsStatusEl.textContent = '載入失敗'; return; }
+  const before = opsResultsEl.children.length;
+  renderQuickCards(opsResultsEl);
+  if (opsResultsEl.children.length === before) opsResultsEl.innerHTML = '<div class="no-results">尚無常用項目</div>';
+});
+
 opsShowAllBtn.addEventListener('click', async () => {
+  opsQuickBtn.classList.remove('active');
   await loadOpsData();
   opsSearchInput.value = '';
   opsClearBtn.classList.remove('visible');

@@ -679,7 +679,9 @@ body {
 
 #ops-actions { padding: 6px 2px 2px; display: flex; gap: 8px; }
 
-#ops-show-all-btn {
+#ops-quick-btn.active { background: var(--primary); color: #fff; }
+
+#ops-show-all-btn, #ops-quick-btn {
   background: var(--accent);
   border: 1.5px solid var(--primary);
   color: var(--primary-dark);
