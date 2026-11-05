@@ -66,9 +66,16 @@
   }
 
   let lastAlive = Date.now();
+  let byeTimer = null;
   channel.onmessage = e => {
-    if (e.data === 'alive') lastAlive = Date.now();
-    else if (e.data === 'lock') closeOrLock();
+    if (e.data === 'alive') {
+      lastAlive = Date.now();
+      clearTimeout(byeTimer);
+      byeTimer = null;
+    } else if (e.data === 'bye') {
+      // 主頁重新整理時會很快再送 alive，3 秒內沒收到才視為真的關閉
+      if (window.opener && !byeTimer) byeTimer = setTimeout(closeOrLock, 3000);
+    } else if (e.data === 'lock') closeOrLock();
     else if (e.data === 'unlock') { sessionStorage.setItem('icd_auth', '1'); hideLock(); }
   };
   // 只有由 App 開啟的分頁才檢查主 App 是否還開著

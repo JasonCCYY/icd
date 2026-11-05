@@ -286,7 +286,9 @@
   lockChannel.onmessage = e => {
     if (e.data === 'unlock' && document.getElementById('lock-screen')) doUnlock(true);
   };
+  lockChannel.postMessage('alive');
   setInterval(() => lockChannel.postMessage('alive'), 30000);
+  window.addEventListener('pagehide', () => lockChannel.postMessage('bye'));
   setInterval(checkIdleLock, 15000);
 
   function doLock() {
