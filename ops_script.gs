@@ -88,10 +88,14 @@ function doGet(e) {
       const grouped = {};
       rows.forEach(r => {
         const type = String(r[0]||'').trim();
-        const text = String(r[1]||'').trim();
-        if (!type || !text) return;
+        if (!type) return;
+        // 「常見-」開頭：B~F 欄每格一項；其餘只取 B 欄
+        const cells = type.startsWith('常見')
+          ? r.slice(1, 6).map(v => String(v||'').trim()).filter(v => v)
+          : [String(r[1]||'').trim()].filter(v => v);
+        if (!cells.length) return;
         if (!grouped[type]) grouped[type] = [];
-        grouped[type].push(text);
+        grouped[type].push(...cells);
       });
       return output(grouped, 'ok');
     }

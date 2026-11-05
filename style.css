@@ -1032,3 +1032,30 @@ body {
   transition: background 0.15s;
 }
 .notes-row:active, .notes-row-flash { background: var(--accent); }
+.notes-card {
+  padding: 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.notes-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+  padding: 2px 4px 4px;
+}
+.notes-chip {
+  padding: 8px 12px;
+  background: var(--bg, #f4f6fb);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: var(--text);
+  cursor: pointer;
+  line-height: 1.5;
+  transition: background 0.15s;
+}
+.notes-chip:active, .notes-chip.notes-row-flash { background: var(--accent); }

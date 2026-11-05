@@ -368,34 +368,61 @@ async function loadNotes() {
   // Render type buttons
   typeBtns.innerHTML = '';
   let activeType = null;
-  const types = Object.keys(notesData);
+  const QUICK_TAB = '常用';
+  const quickKeys = Object.keys(notesData).filter(t => t.startsWith('常見'));
+  const types = Object.keys(notesData).filter(t => !t.startsWith('常見'));
+  if (quickKeys.length) types.push(QUICK_TAB);
+
+  function bindNoteCopy(el, text) {
+    let timer = null;
+    el.addEventListener('click', () => {
+      if (timer) return;
+      timer = setTimeout(() => {
+        timer = null;
+        navigator.clipboard.writeText(text).catch(() => {});
+        showToast(`已複製`);
+        el.classList.add('notes-row-flash');
+        setTimeout(() => el.classList.remove('notes-row-flash'), 500);
+      }, 220);
+    });
+    el.addEventListener('dblclick', e => {
+      e.stopPropagation();
+      if (timer) { clearTimeout(timer); timer = null; }
+      navigator.clipboard.writeText(text).catch(() => {});
+      showToast(`已複製`);
+    });
+  }
+
+  function showQuick() {
+    quickKeys.forEach(key => {
+      const card = document.createElement('div');
+      card.className = 'notes-card';
+      const title = document.createElement('div');
+      title.className = 'notes-card-title';
+      title.textContent = key.replace(/^常見[-－—]?\s*/, '') || key;
+      card.appendChild(title);
+      (notesData[key] || []).forEach(text => {
+        const chip = document.createElement('div');
+        chip.className = 'notes-chip';
+        chip.textContent = text;
+        bindNoteCopy(chip, text);
+        card.appendChild(chip);
+      });
+      listEl.appendChild(card);
+    });
+  }
 
   function showType(type) {
     activeType = type;
     typeBtns.querySelectorAll('.soap-type-chip').forEach(b =>
       b.classList.toggle('active', b.textContent === type));
     listEl.innerHTML = '';
+    if (type === QUICK_TAB) { showQuick(); return; }
     (notesData[type] || []).forEach(text => {
       const row = document.createElement('div');
       row.className = 'notes-row';
       row.textContent = text;
-      let timer = null;
-      row.addEventListener('click', () => {
-        if (timer) return;
-        timer = setTimeout(() => {
-          timer = null;
-          navigator.clipboard.writeText(text).catch(() => {});
-          showToast(`已複製`);
-          row.classList.add('notes-row-flash');
-          setTimeout(() => row.classList.remove('notes-row-flash'), 500);
-        }, 220);
-      });
-      row.addEventListener('dblclick', e => {
-        e.stopPropagation();
-        if (timer) { clearTimeout(timer); timer = null; }
-        navigator.clipboard.writeText(text).catch(() => {});
-        showToast(`已複製`);
-      });
+      bindNoteCopy(row, text);
       listEl.appendChild(row);
     });
   }
