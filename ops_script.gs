@@ -89,8 +89,8 @@ function doGet(e) {
       rows.forEach(r => {
         const type = String(r[0]||'').trim();
         if (!type) return;
-        // 「常見-」開頭：B~F 欄每格一項；其餘只取 B 欄
-        const cells = type.startsWith('常見')
+        // 「常用-」或「常見-」開頭：B~F 欄每格一項；其餘只取 B 欄
+        const cells = /^(常用|常見)/.test(type)
           ? r.slice(1, 6).map(v => String(v||'').trim()).filter(v => v)
           : [String(r[1]||'').trim()].filter(v => v);
         if (!cells.length) return;

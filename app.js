@@ -369,8 +369,8 @@ async function loadNotes() {
   typeBtns.innerHTML = '';
   let activeType = null;
   const QUICK_TAB = '常用';
-  const quickKeys = Object.keys(notesData).filter(t => t.startsWith('常見'));
-  const types = Object.keys(notesData).filter(t => !t.startsWith('常見'));
+  const quickKeys = Object.keys(notesData).filter(t => /^(常用|常見)/.test(t));
+  const types = Object.keys(notesData).filter(t => !/^(常用|常見)/.test(t));
   if (quickKeys.length) types.push(QUICK_TAB);
 
   function bindNoteCopy(el, text) {
@@ -399,7 +399,7 @@ async function loadNotes() {
       card.className = 'notes-card';
       const title = document.createElement('div');
       title.className = 'notes-card-title';
-      title.textContent = key.replace(/^常見[-－—]?\s*/, '') || key;
+      title.textContent = key.replace(/^(常用|常見)[-－—]?\s*/, '') || key;
       card.appendChild(title);
       (notesData[key] || []).forEach(text => {
         const chip = document.createElement('div');
