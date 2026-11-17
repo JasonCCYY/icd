@@ -513,6 +513,47 @@ body {
 #soap-picker {
   padding: 8px 16px 0;
 }
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.confirm-box {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px 20px 16px;
+  width: min(280px, 86vw);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+.confirm-msg {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+  margin-bottom: 16px;
+}
+.confirm-btns { display: flex; gap: 10px; }
+.confirm-btns button {
+  flex: 1;
+  padding: 11px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+.confirm-btns .confirm-ok {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
 #soap-picker.injection-mode .soap-section-label { display: none; }
 #soap-picker.injection-mode .soap-chips {
   flex-direction: column;

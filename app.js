@@ -62,11 +62,18 @@ renderAbbrPanel();
 
 // ─── Chinese lookup (local zh.json, 健保署 2023 官方中文版) ───────────────────
 let zhMap = null;
+let zhPromise = null;
 
-fetch('zh.json')
-  .then(r => r.json())
-  .then(data => { zhMap = data; })
-  .catch(() => {});
+// 第一次搜尋才下載並解析（約 5 MB），不拖慢啟動
+function ensureZh() {
+  if (!zhPromise) {
+    zhPromise = fetch('zh.json')
+      .then(r => r.json())
+      .then(data => { zhMap = data; })
+      .catch(() => { zhPromise = null; });
+  }
+  return zhPromise;
+}
 
 function getZhName(code) {
   if (!zhMap) return null;
@@ -102,41 +109,53 @@ let diagSheetData = null; // [{name, code}]
 
 async function loadDiagData() {
   if (diagSheetData) return diagSheetData;
-  const cached = lsGet('diag_sheet');
-  if (cached) { diagSheetData = cached; return cached; }
-  try {
-    const url = `${OPS_SCRIPT_URL}?token=${encodeURIComponent(OPS_TOKEN)}&sheet=${encodeURIComponent('診斷碼')}`;
-    const resp = await fetch(url);
-    const json = await resp.json();
-    if (json.status === 'ok') {
-      diagSheetData = json.data;
-      lsSet('diag_sheet', diagSheetData);
-    }
-  } catch(e) {}
+  // 不重試：Sheet 載入失敗時不讓搜尋卡住
+  diagSheetData = await loadSheet('診斷碼', 'diag_sheet', 0);
   return diagSheetData;
 }
 
-function searchDiagSheet(query) {
+// Sheet 名稱是你自己的簡寫（如 Lt clavicle），所以用「輸入原文」和「縮寫展開後」各比對一次
+function searchDiagSheet(...queries) {
   if (!diagSheetData) return [];
-  const tokens = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const tokenSets = queries
+    .map(q => q.toLowerCase().split(/\s+/).filter(Boolean))
+    .filter(t => t.length);
   return diagSheetData.filter(r => {
     const name = r.name.toLowerCase();
-    return tokens.every(t => name.includes(t));
+    return tokenSets.some(tokens => tokens.every(t => name.includes(t)));
   });
 }
 
+const lookupCache = new Map();
+
 async function lookupCodeInfo(code) {
   // Look up a specific ICD code via NLM API to get English + Chinese names
+  const key = code.replace(/\./g, '');
+  if (lookupCache.has(key)) return lookupCache.get(key);
   const url = `${API_BASE}?terms=${encodeURIComponent(code)}&sf=code,name&df=code,name&maxList=5`;
   try {
     const resp = await fetch(url);
     const data = await resp.json();
     const items = data[3] || [];
     // Find exact code match
-    const match = items.find(([c]) => c.replace(/\./g,'') === code.replace(/\./g,''));
-    if (match) return { code: match[0], name: match[1] };
+    const match = items.find(([c]) => c.replace(/\./g,'') === key);
+    if (match) {
+      const info = { code: match[0], name: match[1] };
+      lookupCache.set(key, info);
+      return info;
+    }
   } catch(e) {}
   return null;
+}
+
+async function searchSheetResults(query, raw) {
+  await loadDiagData();
+  const matches = searchDiagSheet(raw, query).slice(0, 5);
+  return Promise.all(matches.map(async r => {
+    const info = await lookupCodeInfo(r.code);
+    if (!info) return { code: r.code, name: r.code, sheetName: r.name };
+    return { code: info.code, name: info.name, sheetName: r.name };
+  }));
 }
 
 async function searchICD(query) {
@@ -217,6 +236,31 @@ function showToast(msg) {
   toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1800);
 }
 
+// ─── App 內確認視窗（取代瀏覽器原生 confirm）──────────────────────────────────
+function appConfirm(message) {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.className = 'confirm-overlay';
+    overlay.innerHTML =
+      '<div class="confirm-box"><div class="confirm-msg"></div>' +
+      '<div class="confirm-btns"><button class="confirm-cancel">取消</button>' +
+      '<button class="confirm-ok">確認</button></div></div>';
+    overlay.querySelector('.confirm-msg').textContent = message;
+    const onKey = e => { if (e.key === 'Escape') done(false); };
+    const done = v => {
+      document.removeEventListener('keydown', onKey);
+      overlay.remove();
+      resolve(v);
+    };
+    overlay.querySelector('.confirm-ok').addEventListener('click', () => done(true));
+    overlay.querySelector('.confirm-cancel').addEventListener('click', () => done(false));
+    overlay.addEventListener('click', e => { if (e.target === overlay) done(false); });
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(overlay);
+    overlay.querySelector('.confirm-ok').focus();
+  });
+}
+
 // ─── Search handler ───────────────────────────────────────────────────────────
 let debounceTimer = null;
 
@@ -231,6 +275,7 @@ function handleInput() {
     return;
   }
 
+  ensureZh();
   const formatted = maybeFormatCode(raw.trim());
   let query, hint;
   if (formatted !== raw.trim()) {
@@ -249,36 +294,41 @@ function handleInput() {
     });
   }
   clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(() => doSearch(query), 300);
+  debounceTimer = setTimeout(() => doSearch(query, raw.trim()), 300);
 }
 
-async function doSearch(query) {
+let searchSeq = 0;
+
+async function doSearch(query, raw = query) {
+  const seq = ++searchSeq;
   statusEl.innerHTML = '<span class="spinner"></span>搜索中…';
   resultsList.innerHTML = '';
   try {
-    // Search Sheet and NLM in parallel
-    const [apiItems, diagData] = await Promise.all([
-      searchICD(query),
-      loadDiagData(),
+    // NLM、Sheet（含代碼查詢）、中文字典同時進行
+    const [apiItems, sheetResults] = await Promise.all([
+      searchICD(query).catch(e => { if (e.name === 'AbortError') throw e; return null; }),
+      searchSheetResults(query, raw),
+      ensureZh(),
     ]);
-
-    // Sheet matches (top 2), look up each code via NLM
-    const sheetMatches = searchDiagSheet(query).slice(0, 5);
-    const sheetResults = await Promise.all(sheetMatches.map(async r => {
-      const info = await lookupCodeInfo(r.code);
-      if (!info) return { code: r.code, name: r.code, sheetName: r.name };
-      return { code: info.code, name: info.name, sheetName: r.name };
-    }));
+    if (seq !== searchSeq) return;
 
     // NLM results, skip codes already shown from Sheet
     const sheetCodes = new Set(sheetResults.map(r => r.code.replace(/\./g,'')));
-    const apiFiltered = apiItems.filter(r => !sheetCodes.has(r.code.replace(/\./g,'')));
+    const apiFiltered = (apiItems || []).filter(r => !sheetCodes.has(r.code.replace(/\./g,'')));
 
     const all = [...sheetResults, ...apiFiltered];
-    statusEl.textContent = all.length ? `找到 ${all.length} 筆結果` : '';
+    if (!all.length && apiItems === null) {
+      statusEl.textContent = '網路錯誤，請稍後再試';
+      return;
+    }
+    const notes = [];
+    if (apiItems === null) notes.push('NLM 搜尋失敗');
+    if (!diagSheetData) notes.push('Sheet 診斷碼未載入');
+    statusEl.textContent = (all.length ? `找到 ${all.length} 筆結果` : '') +
+      (notes.length ? `（${notes.join('、')}）` : '');
     renderResults(all);
   } catch (e) {
-    if (e.name === 'AbortError') return;
+    if (e.name === 'AbortError' || seq !== searchSeq) return;
     statusEl.textContent = '網路錯誤，請稍後再試';
   }
 }
@@ -350,11 +400,7 @@ const isQuickKey = t => /^(常用|常見)/.test(t);
 
 async function ensureNotesData() {
   if (notesData) return notesData;
-  const cached = lsGet('notes');
-  if (cached) { notesData = cached; return notesData; }
-  const url = `${OPS_SCRIPT_URL}?token=${encodeURIComponent(OPS_TOKEN)}&sheet=${encodeURIComponent('備註')}`;
-  const data = await fetchWithRetry(url);
-  if (data) { notesData = data; lsSet('notes', notesData); }
+  notesData = await loadSheet('備註', 'notes');
   return notesData;
 }
 
@@ -442,16 +488,27 @@ async function loadNotes() {
   if (types.length) showType(types[0]);
 }
 
-// ─── localStorage cache (private device only) ─────────────────────────────
-const LS_TTL = 6 * 60 * 60 * 1000; // 6 hours
+// ─── Sheet 資料載入（統一）─────────────────────────────────────────────────────
+// 有快取就先用，快取超過 LS_FRESH_MS 則背景更新；沒快取才等網路。
+const LS_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+const LS_FRESH_MS   = 10 * 60 * 1000;
 
-function lsGet(key) {
+// 按「重新整理」後的這次載入，要求 Apps Script 略過它的伺服器端快取
+const FORCE_FRESH = (() => {
+  try {
+    const f = sessionStorage.getItem('icd_fresh') === '1';
+    sessionStorage.removeItem('icd_fresh');
+    return f;
+  } catch(e) { return false; }
+})();
+
+function lsRead(key) {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return null;
     const { ts, data } = JSON.parse(raw);
-    if (Date.now() - ts > LS_TTL) { localStorage.removeItem(key); return null; }
-    return data;
+    if (Date.now() - ts > LS_MAX_AGE_MS) { localStorage.removeItem(key); return null; }
+    return { ts, data };
   } catch(e) { return null; }
 }
 
@@ -459,20 +516,60 @@ function lsSet(key, data) {
   try { localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data })); } catch(e) {}
 }
 
+async function fetchWithRetry(url, retries = 2, delay = 1500) {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const resp = await fetch(url);
+      const json = await resp.json();
+      if (json.status === 'ok') return json.data;
+    } catch(e) {}
+    if (i < retries) await new Promise(r => setTimeout(r, delay));
+  }
+  return null;
+}
+
+const sheetMem      = {};
+const sheetInflight = {};
+// 背景更新完成後，同步更新各頁面持有的資料變數
+const sheetSinks = {
+  ops:        d => { opsData = d; },
+  diag_sheet: d => { diagSheetData = d; },
+  notes:      d => { notesData = d; },
+  pt:         d => { ptData = d; },
+};
+
+function refreshSheet(sheet, key, retries) {
+  if (sheetInflight[key]) return sheetInflight[key];
+  const url = `${OPS_SCRIPT_URL}?token=${encodeURIComponent(OPS_TOKEN)}&sheet=${encodeURIComponent(sheet)}${FORCE_FRESH ? '&fresh=1' : ''}`;
+  const p = fetchWithRetry(url, retries).then(data => {
+    if (data) {
+      sheetMem[key] = data;
+      lsSet(key, data);
+      if (sheetSinks[key]) sheetSinks[key](data);
+    }
+    return data;
+  }).finally(() => { delete sheetInflight[key]; });
+  sheetInflight[key] = p;
+  return p;
+}
+
+function loadSheet(sheet, key, retries = 2) {
+  if (sheetMem[key]) return Promise.resolve(sheetMem[key]);
+  const entry = lsRead(key);
+  if (entry) {
+    sheetMem[key] = entry.data;
+    if (Date.now() - entry.ts > LS_FRESH_MS) refreshSheet(sheet, key, retries);
+    return Promise.resolve(entry.data);
+  }
+  return refreshSheet(sheet, key, retries);
+}
+
 async function loadOpsData() {
   if (opsData) return opsData;
-  if (OPS_SCRIPT_URL === 'PASTE_YOUR_APPS_SCRIPT_URL_HERE') {
-    opsStatusEl.textContent = '尚未設定 Apps Script URL';
-    return [];
-  }
-  const cached = lsGet('ops');
-  if (cached) { opsData = cached; opsStatusEl.textContent = ''; return opsData; }
-  opsStatusEl.innerHTML = '<span class="spinner"></span>載入手術碼資料…';
-  const url = `${OPS_SCRIPT_URL}?token=${encodeURIComponent(OPS_TOKEN)}`;
-  const data = await fetchWithRetry(url);
+  if (!lsRead('ops')) opsStatusEl.innerHTML = '<span class="spinner"></span>載入手術碼資料…';
+  const data = await loadSheet('手術碼', 'ops');
   if (data) {
     opsData = data;
-    lsSet('ops', opsData);
     opsStatusEl.textContent = '';
     return opsData;
   }
@@ -613,9 +710,6 @@ opsShowAllBtn.addEventListener('click', async () => {
 });
 
 // ─── SOAP page ────────────────────────────────────────────────────────────────
-const SOAP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxCaJs3M9JxP6gm2jsSGD2mQn03y1Vdf2zmb1JSvCfJKxLm21HiUNnq--JaEevTeQno4Q/exec';
-const SOAP_TOKEN      = 'cycicd-ops-X7m3K9pQ';
-
 function addChipEvents(chip, onSingleClick, copyText) {
   let timer = null;
   chip.addEventListener('click', () => {
@@ -639,7 +733,6 @@ const soapTextarea  = document.getElementById('soap-textarea');
 const soapCopyBtn   = document.getElementById('soap-copy-btn');
 const soapRestoreBtn= document.getElementById('soap-restore-btn');
 
-let soapCache   = {};        // { sheetName: groupedData }
 let soapLastVal = '';
 
 function getDefaultSoapSheet() {
@@ -782,26 +875,8 @@ function appendToLine(key, value) {
 
 
 // Load SOAP data
-async function fetchWithRetry(url, retries = 2, delay = 1500) {
-  for (let i = 0; i <= retries; i++) {
-    try {
-      const resp = await fetch(url);
-      const json = await resp.json();
-      if (json.status === 'ok') return json.data;
-    } catch(e) {}
-    if (i < retries) await new Promise(r => setTimeout(r, delay));
-  }
-  return null;
-}
-
-async function loadSoapData(sheet) {
-  if (soapCache[sheet]) return soapCache[sheet];
-  const cached = lsGet(`soap_${sheet}`);
-  if (cached) { soapCache[sheet] = cached; return cached; }
-  const url = `${SOAP_SCRIPT_URL}?token=${encodeURIComponent(SOAP_TOKEN)}&sheet=${encodeURIComponent(sheet)}`;
-  const data = await fetchWithRetry(url);
-  if (data) { soapCache[sheet] = data; lsSet(`soap_${sheet}`, data); }
-  return data;
+function loadSoapData(sheet) {
+  return loadSheet(sheet, `soap_${sheet}`);
 }
 
 // Render type buttons
@@ -843,7 +918,7 @@ function renderInjectionPicker(typeData) {
     chip.textContent = item;
     const run = async times => {
       if (chip.disabled) return;
-      if (!confirm(times > 1 ? `確認新增 X${times}？` : '確認新增？')) return;
+      if (!(await appConfirm(times > 1 ? `確認新增 X${times}？` : '確認新增？'))) return;
       chip.disabled = true;
       let ok = true;
       for (let i = 0; i < times; i++) ok = (await sendInjection(item)) && ok;
@@ -1173,16 +1248,8 @@ const certRestoreBtn= document.getElementById('cert-restore-btn');
 
 let certSheet   = '診斷書中正';
 let certLastVal = '';
-const certCache = {};
-
-async function loadCertData(sheet) {
-  if (certCache[sheet]) return certCache[sheet];
-  const cached = lsGet(`cert_${sheet}`);
-  if (cached) { certCache[sheet] = cached; return cached; }
-  const url = `${SOAP_SCRIPT_URL}?token=${encodeURIComponent(SOAP_TOKEN)}&sheet=${encodeURIComponent(sheet)}`;
-  const data = await fetchWithRetry(url);
-  if (data) { certCache[sheet] = data; lsSet(`cert_${sheet}`, data); }
-  return data;
+function loadCertData(sheet) {
+  return loadSheet(sheet, `cert_${sheet}`);
 }
 
 async function renderCertTypes(sheet) {
@@ -1392,18 +1459,12 @@ async function loadPt() {
   if (ptLoaded) { renderPtCats(); return; }
   const catBtns = document.getElementById('pt-cat-btns');
   catBtns.innerHTML = '<span style="color:#aaa;font-size:.85rem">載入中…</span>';
-  const cached = lsGet('pt');
-  if (cached) { ptData = cached; }
-  else {
-    const url = `${OPS_SCRIPT_URL}?token=${encodeURIComponent(OPS_TOKEN)}&sheet=${encodeURIComponent('復健')}`;
-    const data = await fetchWithRetry(url);
-    if (!data) {
-      catBtns.innerHTML = '<span style="color:#d93025;font-size:.85rem">載入失敗</span>';
-      return;
-    }
-    ptData = data;
-    lsSet('pt', ptData);
+  const data = await loadSheet('復健', 'pt');
+  if (!data) {
+    catBtns.innerHTML = '<span style="color:#d93025;font-size:.85rem">載入失敗</span>';
+    return;
   }
+  ptData = data;
   ptLoaded = true;
   renderPtCats();
 }
@@ -1511,6 +1572,7 @@ document.getElementById('refresh-btn').addEventListener('click', () => {
   ['ops','soap_SOAP中正','soap_SOAP門診','cert_診斷書中正','cert_診斷書門診','notes','pt','diag_sheet'].forEach(k => {
     try { localStorage.removeItem(k); } catch(e) {}
   });
+  try { sessionStorage.setItem('icd_fresh', '1'); } catch(e) {}
   location.reload();
 });
 
