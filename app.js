@@ -949,7 +949,9 @@ async function renderSoapTypes(sheet) {
     soapTypeBtns.innerHTML = '<span style="color:#d93025;font-size:.85rem">載入失敗</span>';
     return;
   }
+  const lite = sessionStorage.getItem('icd_mode') === 'lite';
   Object.keys(data).forEach(type => {
+    if (lite && type === '針劑') return;
     const btn = document.createElement('button');
     btn.className = 'soap-type-chip';
     btn.textContent = type;

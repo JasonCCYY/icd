@@ -24,7 +24,8 @@
   </div>
 
   <script>
-  const PW_HASH = '6ed09607ae0f7186a908a39b29e64cea658d96283aa28d37cebf3af395911895';
+  const PW_FULL = 'e78d5442dfaaefeb7883ac1f20023db055ee47b466107b461c2e46de41da7619';
+  const PW_LITE = '6ed09607ae0f7186a908a39b29e64cea658d96283aa28d37cebf3af395911895';
   const EDU_PRES_URL = 'https://docs.google.com/presentation/d/1M2-ZfIjzO0mXN2nePp99eWvPHYpaTX1TFthmtVwh0Ms/preview#slide=id.g3f2647bc135_0_279';
 
   const frame = document.getElementById('edu-frame');
@@ -44,9 +45,12 @@
     return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
   }
   async function tryUnlock() {
-    if (await sha256(pwInput.value) === PW_HASH) {
+    const h = await sha256(pwInput.value);
+    const mode = h === PW_FULL ? 'full' : h === PW_LITE ? 'lite' : null;
+    if (mode) {
       sessionStorage.setItem('icd_auth', '1');
-      channel.postMessage('unlock');
+      sessionStorage.setItem('icd_mode', mode);
+      channel.postMessage('unlock:' + mode);
       hideLock();
     } else {
       const err = document.getElementById('pw-error');
@@ -76,7 +80,10 @@
       // 主頁重新整理時會很快再送 alive，3 秒內沒收到才視為真的關閉
       if (window.opener && !byeTimer) byeTimer = setTimeout(closeOrLock, 3000);
     } else if (e.data === 'lock') closeOrLock();
-    else if (e.data === 'unlock') { sessionStorage.setItem('icd_auth', '1'); hideLock(); }
+    else if (typeof e.data === 'string' && e.data.startsWith('unlock')) {
+      sessionStorage.setItem('icd_auth', '1');
+      hideLock();
+    }
   };
   // 只有由 App 開啟的分頁才檢查主 App 是否還開著
   if (window.opener) {

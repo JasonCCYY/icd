@@ -211,7 +211,9 @@
   </div>
 
   <script>
-  const PW_HASH = '6ed09607ae0f7186a908a39b29e64cea658d96283aa28d37cebf3af395911895';
+  // 兩組密碼：FULL 保留全部功能；LITE 不自動開衛教、不顯示針劑
+  const PW_FULL = 'e78d5442dfaaefeb7883ac1f20023db055ee47b466107b461c2e46de41da7619';
+  const PW_LITE = '6ed09607ae0f7186a908a39b29e64cea658d96283aa28d37cebf3af395911895';
 
   // 私人模式：URL 帶 ?p=1 時存入 sessionStorage，之後重新整理也會保持
   if (new URLSearchParams(location.search).get('p') === '1') {
@@ -232,11 +234,15 @@
     const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
     return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
   }
+  async function pwMode(str) {
+    const h = await sha256(str);
+    return h === PW_FULL ? 'full' : h === PW_LITE ? 'lite' : null;
+  }
   async function tryUnlock() {
     const val = document.getElementById('pw-input').value;
-    const hash = await sha256(val);
-    if (hash === PW_HASH) {
-      doUnlock();
+    const mode = await pwMode(val);
+    if (mode) {
+      doUnlock(mode);
     } else {
       const err = document.getElementById('pw-error');
       err.textContent = '密碼錯誤';
@@ -249,7 +255,7 @@
     document.getElementById('pw-input').addEventListener('keydown', e => {
       if (e.key === 'Enter') tryUnlock();
     });
-    setTimeout(() => document.getElementById('pw-input').focus(), 100);
+    setTimeout(() => document.getElementById('pw-input')?.focus(), 100);
   }
   // 每個時間點起 1 小時內，5 分鐘沒操作就鎖定；其餘時間不自動鎖
   const IDLE_LOCK_MS = 5 * 60 * 1000;
@@ -285,7 +291,9 @@
 
   const lockChannel = new BroadcastChannel('icd_lock');
   lockChannel.onmessage = e => {
-    if (e.data === 'unlock' && document.getElementById('lock-screen')) doUnlock(true);
+    if (typeof e.data === 'string' && e.data.startsWith('unlock') && document.getElementById('lock-screen')) {
+      doUnlock(e.data.split(':')[1] === 'lite' ? 'lite' : 'full', true);
+    }
   };
   lockChannel.postMessage('alive');
   setInterval(() => lockChannel.postMessage('alive'), 30000);
@@ -302,7 +310,7 @@
     document.body.prepend(lockEl);
     document.getElementById('app').hidden = true;
     bindLock();
-    setTimeout(() => document.getElementById('pw-input').focus(), 100);
+    setTimeout(() => document.getElementById('pw-input')?.focus(), 100);
   }
 
   let activityBound = false;
@@ -317,14 +325,17 @@
 
   const isPrivate = () => sessionStorage.getItem('icd_private') === '1';
 
-  function doUnlock(fromRemote) {
+  function doUnlock(mode, fromRemote) {
     sessionStorage.setItem('icd_auth', '1');
-    if (fromRemote !== true) lockChannel.postMessage('unlock');
+    sessionStorage.setItem('icd_mode', mode);
+    if (fromRemote !== true) lockChannel.postMessage('unlock:' + mode);
     document.getElementById('lock-screen').remove();
     document.getElementById('app').hidden = false;
     addBackBtn();
     if (!isPrivate()) startActivityWatch();
-    if (fromRemote !== true && !isPrivate() && !sessionStorage.getItem('icd_edu_opened')) {
+    // 密碼對應的功能不同，重新畫一次 SOAP 類型（LITE 不顯示針劑）
+    if (typeof renderSoapTypes === 'function' && typeof soapSheet !== 'undefined') renderSoapTypes(soapSheet);
+    if (mode === 'full' && fromRemote !== true && !isPrivate() && !sessionStorage.getItem('icd_edu_opened')) {
       sessionStorage.setItem('icd_edu_opened', '1');
       window.open('edu.html', '_blank');
     }
@@ -338,7 +349,7 @@
   } else if (location.hash) {
     const raw = location.hash.slice(1);
     history.replaceState(null, '', location.pathname + location.search);
-    sha256(raw).then(h => { if (h === PW_HASH) doUnlock(); else bindLock(); });
+    pwMode(raw).then(m => { if (m) doUnlock(m); else bindLock(); });
   } else {
     bindLock();
   }
