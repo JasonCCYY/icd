@@ -47,7 +47,12 @@
   async function tryUnlock() {
     const h = await sha256(pwInput.value);
     const mode = h === PW_FULL ? 'full' : h === PW_LITE ? 'lite' : null;
-    if (mode) {
+    if (mode === 'lite') {
+      const err = document.getElementById('pw-error');
+      err.textContent = '此密碼不可使用衛教';
+      pwInput.value = '';
+      setTimeout(() => { err.textContent = ''; }, 2000);
+    } else if (mode) {
       sessionStorage.setItem('icd_auth', '1');
       sessionStorage.setItem('icd_mode', mode);
       channel.postMessage('unlock:' + mode);
@@ -81,6 +86,7 @@
       if (window.opener && !byeTimer) byeTimer = setTimeout(closeOrLock, 3000);
     } else if (e.data === 'lock') closeOrLock();
     else if (typeof e.data === 'string' && e.data.startsWith('unlock')) {
+      if (e.data === 'unlock:lite') { closeOrLock(); return; }
       sessionStorage.setItem('icd_auth', '1');
       hideLock();
     }
@@ -93,7 +99,8 @@
   }
 
   frame.src = EDU_PRES_URL;
-  if (sessionStorage.getItem('icd_auth') !== '1' && sessionStorage.getItem('icd_private') !== '1') showLock();
+  if (sessionStorage.getItem('icd_mode') === 'lite') closeOrLock();
+  else if (sessionStorage.getItem('icd_auth') !== '1' && sessionStorage.getItem('icd_private') !== '1') showLock();
   </script>
 </body>
 </html>

@@ -1547,6 +1547,7 @@ function renderPtItems(items) {
     btn.addEventListener('click', () => {
       const now = Date.now();
       if (now - lastTap < 400 && !opening) {
+        if (sessionStorage.getItem('icd_mode') === 'lite') { lastTap = 0; return; }
         opening = true;
         window.open('edu.html', '_blank');
         lastTap = 0;
